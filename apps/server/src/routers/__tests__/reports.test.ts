@@ -8,6 +8,7 @@ import type { AppointmentService } from "../../services/appointments";
 import type { AlertService } from "../../services/alerts";
 import type { ReportsService } from "../../services/reports";
 import type { OccurrenceService } from "../../services/occurrences";
+import type { ProfessionalOnboardingService } from "../../services/professionals";
 import type { AppEnv } from "../../types/context";
 import { auth } from "../../lib/auth";
 import * as usersRepository from "../../repositories/users";
@@ -56,6 +57,9 @@ function buildRouter(): RouterSetup {
 		listPatientOccurrences: vi.fn(),
 		createOccurrence: vi.fn(),
 	} as unknown as OccurrenceService;
+	const professionals = {
+		completeOnboarding: vi.fn(),
+	} as unknown as ProfessionalOnboardingService;
 
 	const router = createAppRouter({
 		patientAuth,
@@ -65,6 +69,7 @@ function buildRouter(): RouterSetup {
 		alerts,
 		reports: reports as unknown as ReportsService,
 		occurrences,
+		professionals,
 		patientLoginRateLimit: noopRateLimit,
 	});
 

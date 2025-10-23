@@ -4,6 +4,14 @@ export type ProfessionalContext = {
 	id: number;
 	externalId: string;
 	roles: string[];
+	name?: string;
+	email?: string;
+	documentId?: string;
+	specialty?: string | null;
+	phone?: string | null;
+	isActive?: boolean;
+	createdAt?: Date;
+	updatedAt?: Date;
 };
 
 export type PatientSession = {

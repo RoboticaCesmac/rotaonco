@@ -5,6 +5,7 @@ import {
 	type Theme,
 	ThemeProvider,
 } from "@react-navigation/native";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
@@ -13,6 +14,7 @@ import React, { useRef } from "react";
 import { useColorScheme } from "@/lib/use-color-scheme";
 import { Platform } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
+import { createQueryClient } from "@/lib/query-client";
 
 const LIGHT_THEME: Theme = {
 	...DefaultTheme,
@@ -31,6 +33,7 @@ export default function RootLayout() {
 	const hasMounted = useRef(false);
 	const { colorScheme, isDarkColorScheme } = useColorScheme();
 	const [isColorSchemeLoaded, setIsColorSchemeLoaded] = React.useState(false);
+	const [queryClient] = React.useState(() => createQueryClient());
 
 	useIsomorphicLayoutEffect(() => {
 		if (hasMounted.current) {
@@ -49,18 +52,20 @@ export default function RootLayout() {
 		return null;
 	}
 	return (
-		<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-			<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
-			<GestureHandlerRootView style={{ flex: 1 }}>
-				<Stack>
-					<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-					<Stack.Screen
-						name="modal"
-						options={{ title: "Modal", presentation: "modal" }}
-					/>
-				</Stack>
-			</GestureHandlerRootView>
-		</ThemeProvider>
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
+				<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+				<GestureHandlerRootView style={{ flex: 1 }}>
+					<Stack>
+						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+						<Stack.Screen
+							name="modal"
+							options={{ title: "Modal", presentation: "modal" }}
+						/>
+					</Stack>
+				</GestureHandlerRootView>
+			</ThemeProvider>
+		</QueryClientProvider>
 	);
 }
 

@@ -13,8 +13,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
 					isSidebarCollapsed={isSidebarCollapsed}
 					onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
 				/>
-				<main className="flex-1 overflow-y-auto px-6 pb-6 pt-8 lg:px-8 xl:px-10">
-					{children}
+				<main className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-8 lg:px-8 xl:px-10">
+					<div className="flex h-full flex-col overflow-hidden">
+						{children}
+					</div>
 				</main>
 			</div>
 		</div>

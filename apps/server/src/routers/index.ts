@@ -9,11 +9,20 @@ import { requirePatient } from "../middlewares/require-patient";
 import { requireProfessional } from "../middlewares/require-professional";
 import type { PatientAuthService } from "../services/patient-auth";
 import type { PatientService } from "../services/patients";
-import type { PatientManagementService } from "../services/patient-management";
+import type {
+	PatientManagementService,
+	PatientEntity,
+	PatientContactEntity,
+	OccurrenceEntity,
+	AlertEntity as PatientAlertEntity,
+	PatientUpdateInput,
+} from "../services/patient-management";
 import type { AppointmentService, AppointmentUpdateInput } from "../services/appointments";
-import type { AlertService, AlertEntity } from "../services/alerts";
+import type { AlertService } from "../services/alerts";
 import type { ReportsService } from "../services/reports";
 import type { OccurrenceService } from "../services/occurrences";
+import type { ProfessionalDirectoryService, ProfessionalOnboardingService } from "../services/professionals";
+import { ProfessionalOnboardingError } from "../services/professionals";
 import type { MiddlewareHandler } from "hono";
 import { auth } from "../lib/auth";
 
@@ -161,6 +170,22 @@ const patientCreateSchema = z.object({
 	contacts: z.array(patientContactInputSchema).max(20).optional(),
 });
 
+const patientUpdateSchema = z
+	.object({
+		fullName: z.string().trim().min(1).optional(),
+		birthDate: z.union([z.string().trim(), z.null()]).optional(),
+		phone: z.string().trim().optional().nullable(),
+		emergencyPhone: z.string().trim().optional().nullable(),
+		tumorType: z.string().trim().optional().nullable(),
+		clinicalUnit: z.string().trim().optional().nullable(),
+		stage: z.enum(["pre_triage", "in_treatment", "post_treatment"]).optional(),
+		status: z.enum(["active", "inactive", "at_risk"]).optional(),
+		audioMaterialUrl: z.string().trim().url().optional().nullable(),
+	})
+	.refine((value) => Object.values(value).some((field) => field !== undefined), {
+		message: "Informe ao menos um campo para atualizar",
+	});
+
 const patientSearchSchema = z.object({
 	q: z.string().trim().min(1),
 	limit: z.coerce.number().int().min(1).max(50).optional(),
@@ -171,6 +196,46 @@ const occurrenceCreateSchema = z.object({
 	intensity: z.coerce.number().int().min(0).max(10),
 	source: z.enum(["patient", "professional"]),
 	notes: z.string().trim().min(1).optional(),
+});
+
+const professionalOnboardingSchema = z
+	.object({
+		fullName: z.string().trim().min(3, "Informe seu nome completo"),
+		documentId: z
+			.string()
+			.trim()
+			.min(11, "CPF deve conter 11 dígitos")
+			.max(20, "CPF deve conter no máximo 20 caracteres")
+			.refine((value) => value.replace(/\D/g, "").length === 11, {
+				message: "CPF deve conter 11 dígitos",
+			}),
+		specialty: z.string().trim().min(2, "Informe a especialidade"),
+		phone: z.preprocess(
+			(value) => {
+				if (typeof value !== "string") return value;
+				const trimmed = value.trim();
+				return trimmed.length === 0 ? undefined : trimmed;
+			},
+			z
+				.string()
+				.min(10, "Telefone deve conter ao menos 10 dígitos")
+				.max(20, "Telefone deve conter no máximo 20 caracteres")
+				.refine((value) => value.replace(/\D/g, "").length >= 10, {
+					message: "Telefone deve conter ao menos 10 dígitos",
+				})
+				.optional(),
+		),
+	})
+	.strict();
+
+const professionalStatusFilter = z.enum(["active", "inactive"]);
+
+const professionalListQuerySchema = z.object({
+	q: z.string().trim().min(1).max(120).optional(),
+	status: professionalStatusFilter.optional(),
+	includeSummary: z.coerce.boolean().optional(),
+	limit: z.coerce.number().int().min(1).max(100).optional(),
+	offset: z.coerce.number().int().min(0).optional(),
 });
 
 function validationError(details: unknown) {
@@ -189,7 +254,18 @@ type AppRouterDeps = {
 	alerts: AlertService;
 	occurrences: OccurrenceService;
 	reports: ReportsService;
+	professionals: ProfessionalOnboardingService;
+	professionalDirectory?: ProfessionalDirectoryService;
 	patientLoginRateLimit: MiddlewareHandler<AppEnv>;
+};
+
+const noopProfessionalDirectory: ProfessionalDirectoryService = {
+	async listProfessionals() {
+		return { data: [], total: 0, limit: 0, offset: 0 };
+	},
+	async getSummary() {
+		return { total: 0, active: 0, inactive: 0 };
+	},
 };
 
 function getClientIp(c: Parameters<MiddlewareHandler<AppEnv>>[0]): string | null {
@@ -210,6 +286,84 @@ function normalizeNullableString(value?: string | null) {
 	if (value === undefined || value === null) return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
+}
+
+function formatDateOnly(value: Date | null | undefined) {
+	if (!value) return null;
+	return value.toISOString().split("T")[0] ?? null;
+}
+
+function serializePatientEntity(patient: PatientEntity) {
+	return {
+		id: patient.id,
+		fullName: patient.fullName,
+		cpf: patient.cpf,
+		birthDate: formatDateOnly(patient.birthDate ?? null),
+		phone: patient.phone ?? null,
+		emergencyPhone: patient.emergencyPhone ?? null,
+		tumorType: patient.tumorType ?? null,
+		clinicalUnit: patient.clinicalUnit ?? null,
+		stage: patient.stage,
+		status: patient.status,
+		audioMaterialUrl: patient.audioMaterialUrl ?? null,
+		pinAttempts: patient.pinAttempts,
+		pinBlockedUntil: patient.pinBlockedUntil
+			? patient.pinBlockedUntil.toISOString()
+			: null,
+		createdAt: patient.createdAt.toISOString(),
+		updatedAt: patient.updatedAt.toISOString(),
+	};
+}
+
+function serializePatientContact(contact: PatientContactEntity) {
+	return {
+		id: contact.id,
+		fullName: contact.name,
+		relation: contact.relation ?? "",
+		phone: contact.phone,
+		isPrimary: false,
+	};
+}
+
+function serializeOccurrence(occurrence: OccurrenceEntity) {
+	return {
+		id: occurrence.id,
+		patientId: occurrence.patientId,
+		professionalId: occurrence.professionalId,
+		kind: occurrence.kind,
+		intensity: occurrence.intensity,
+		source: occurrence.source,
+		notes: occurrence.notes ?? null,
+		createdAt: occurrence.createdAt.toISOString(),
+	};
+}
+
+function serializeAlert(alert: PatientAlertEntity) {
+	return {
+		id: alert.id,
+		patientId: alert.patientId,
+		kind: alert.kind,
+		severity: alert.severity,
+		status: alert.status,
+		details: alert.details ?? null,
+		createdAt: alert.createdAt.toISOString(),
+		resolvedAt: alert.resolvedAt ? alert.resolvedAt.toISOString() : null,
+		resolvedBy: alert.resolvedBy ?? null,
+	};
+}
+
+function serializePatientDetail(detail: {
+	patient: PatientEntity;
+	contacts: PatientContactEntity[];
+	occurrences: OccurrenceEntity[];
+	alerts: PatientAlertEntity[];
+}) {
+	return {
+		...serializePatientEntity(detail.patient),
+		contacts: detail.contacts.map(serializePatientContact),
+		occurrences: detail.occurrences.map(serializeOccurrence),
+		alerts: detail.alerts.map(serializeAlert),
+	};
 }
 
 function mapPatientLoginError(error: unknown):
@@ -305,6 +459,8 @@ export function createAppRouter(deps: AppRouterDeps) {
 		alerts,
 		occurrences,
 		reports,
+		professionals,
+		professionalDirectory = noopProfessionalDirectory,
 		patientLoginRateLimit,
 	} = deps;
 	const router = new Hono<AppEnv>();
@@ -376,6 +532,129 @@ export function createAppRouter(deps: AppRouterDeps) {
 	authRouter.all("/*", (c) => auth.handler(c.req.raw));
 
 	router.route("/auth", authRouter);
+
+	router.get("/professionals", requireProfessional, async (c) => {
+		const parsed = professionalListQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+
+		const { includeSummary = false, q, status, limit, offset } = parsed.data;
+		const listResult = await professionalDirectory.listProfessionals({
+			q,
+			status,
+			limit,
+			offset,
+		});
+		const summary = includeSummary ? await professionalDirectory.getSummary() : null;
+
+		return c.json({
+			data: listResult.data,
+			meta: {
+				total: listResult.total,
+				limit: listResult.limit,
+				offset: listResult.offset,
+				...(summary ? { statusCounts: summary } : {}),
+			},
+		});
+	});
+
+	router.post("/professionals/onboarding", async (c) => {
+		const session = await auth.api.getSession({
+			headers: c.req.raw.headers,
+		});
+
+		if (!session) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch (error) {
+			return c.json(validationError("JSON inválido"), 400);
+		}
+
+		const parsed = professionalOnboardingSchema.safeParse(body);
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+
+		const email = session.user.email;
+		if (!email) {
+			return c.json(validationError({ email: "Sessão inválida" }), 400);
+		}
+
+		const { fullName, documentId, specialty, phone } = parsed.data;
+
+		try {
+			const result = await professionals.completeOnboarding({
+				externalId: session.user.id,
+				fullName,
+				email,
+				documentId,
+				specialty,
+				phone,
+			});
+
+			return c.json({
+				status: result.isNewUser ? "created" : "updated",
+				userId: result.userId,
+				roles: result.roles,
+			});
+		} catch (error) {
+			if (error instanceof ProfessionalOnboardingError) {
+				switch (error.code) {
+					case "INVALID_DOCUMENT":
+						return c.json(validationError({ documentId: "CPF deve conter 11 dígitos" }), 400);
+					case "DOCUMENT_IN_USE":
+						return c.json(
+							{
+								code: "DOCUMENT_IN_USE",
+								message: "Já existe um profissional cadastrado com este CPF.",
+							},
+							409,
+						);
+					case "MISSING_ACCOUNT":
+						return c.json(
+							{
+								code: "MISSING_ACCOUNT",
+								message: "Não foi possível localizar a conta do usuário.",
+							},
+							400,
+						);
+					case "ROLE_NOT_FOUND":
+						return c.json(
+							{
+								code: "ROLE_NOT_FOUND",
+								message: "Papel profissional não configurado no sistema.",
+							},
+							500,
+						);
+				}
+			}
+			throw error;
+		}
+	});
+
+		router.get("/professionals/me", requireProfessional, async (c) => {
+			const professional = c.get("professional");
+			if (!professional) {
+				throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+			}
+			return c.json({
+				id: professional.id,
+				name: professional.name ?? "",
+				email: professional.email ?? "",
+				documentId: professional.documentId ?? "",
+				specialty: professional.specialty ?? null,
+				phone: professional.phone ?? null,
+				isActive: professional.isActive ?? true,
+				roles: professional.roles,
+				createdAt: professional.createdAt?.toISOString() ?? null,
+				updatedAt: professional.updatedAt?.toISOString() ?? null,
+			});
+		});
 
 	router.get("/patients/me", requirePatient, async (c) => {
 		const patientSession = c.get("patient");
@@ -481,7 +760,100 @@ export function createAppRouter(deps: AppRouterDeps) {
 		if (!detail) {
 			return c.json(notFound("Paciente não encontrado"), 404);
 		}
-		return c.json(detail);
+		return c.json(serializePatientDetail(detail));
+	});
+
+	router.put("/patients/:id", requireProfessional, async (c) => {
+		const idParam = Number(c.req.param("id"));
+		if (Number.isNaN(idParam)) {
+			return c.json(validationError({ id: "ID inválido" }), 400);
+		}
+
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch (error) {
+			return c.json(validationError("JSON inválido"), 400);
+		}
+
+		const parsed = patientUpdateSchema.safeParse(body);
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+
+		const data = parsed.data;
+		const updateInput: PatientUpdateInput = {};
+
+		if (data.fullName !== undefined) {
+			updateInput.fullName = data.fullName.trim();
+		}
+
+		if (data.birthDate !== undefined) {
+			if (data.birthDate === null || data.birthDate.trim().length === 0) {
+				updateInput.birthDate = null;
+			} else {
+				const normalizedBirth = data.birthDate.trim();
+				if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirth)) {
+					return c.json(validationError({ birthDate: "Data inválida" }), 400);
+				}
+				const birthDate = new Date(`${normalizedBirth}T00:00:00.000Z`);
+				if (Number.isNaN(birthDate.getTime())) {
+					return c.json(validationError({ birthDate: "Data inválida" }), 400);
+				}
+				updateInput.birthDate = birthDate;
+			}
+		}
+
+		if (data.phone !== undefined) {
+			updateInput.phone = normalizeNullableString(data.phone ?? undefined);
+		}
+
+		if (data.emergencyPhone !== undefined) {
+			updateInput.emergencyPhone = normalizeNullableString(data.emergencyPhone ?? undefined);
+		}
+
+		if (data.tumorType !== undefined) {
+			updateInput.tumorType = normalizeNullableString(data.tumorType ?? undefined);
+		}
+
+		if (data.clinicalUnit !== undefined) {
+			updateInput.clinicalUnit = normalizeNullableString(data.clinicalUnit ?? undefined);
+		}
+
+		if (data.stage !== undefined) {
+			updateInput.stage = data.stage;
+		}
+
+		if (data.status !== undefined) {
+			updateInput.status = data.status;
+		}
+
+		if (data.audioMaterialUrl !== undefined) {
+			if (data.audioMaterialUrl === null) {
+				updateInput.audioMaterialUrl = null;
+			} else {
+				const normalizedUrl = normalizeNullableString(data.audioMaterialUrl);
+				updateInput.audioMaterialUrl = normalizedUrl;
+			}
+		}
+
+		if (Object.keys(updateInput).length === 0) {
+			return c.json(validationError("Nenhuma alteração informada"), 400);
+		}
+
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+
+		const updated = await patientManagement.updatePatient(idParam, updateInput, {
+			professionalId: professional.id,
+		});
+		if (!updated) {
+			return c.json(notFound("Paciente não encontrado"), 404);
+		}
+
+		return c.json(serializePatientEntity(updated));
 	});
 
 	router.get("/patients/:id/occurrences", requireProfessional, async (c) => {

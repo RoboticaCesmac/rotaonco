@@ -6,6 +6,14 @@ export type UserWithRoles = {
 	id: number;
 	externalId: string;
 	roles: string[];
+	name?: string;
+	email?: string;
+	documentId?: string;
+	specialty?: string | null;
+	phone?: string | null;
+	isActive?: boolean;
+	createdAt?: Date;
+	updatedAt?: Date;
 };
 
 export async function findUserWithRolesByExternalId(externalId: string): Promise<UserWithRoles | null> {
@@ -13,6 +21,14 @@ export async function findUserWithRolesByExternalId(externalId: string): Promise
 		.select({
 			id: users.id,
 			externalId: users.externalId,
+			name: users.name,
+			email: users.email,
+			documentId: users.documentId,
+			specialty: users.specialty,
+			phone: users.phone,
+			isActive: users.isActive,
+			createdAt: users.createdAt,
+			updatedAt: users.updatedAt,
 			role: roles.name,
 		})
 		.from(users)
@@ -25,11 +41,20 @@ export async function findUserWithRolesByExternalId(externalId: string): Promise
 	}
 
 	const { id } = rows[0];
+	const [{ name, email, documentId, specialty, phone, isActive, createdAt, updatedAt }] = rows;
 	const roleNames = Array.from(new Set(rows.map((row) => row.role).filter((name): name is string => Boolean(name))));
 
 	return {
 		id,
 		externalId,
 		roles: roleNames,
+		name,
+		email,
+		documentId,
+		specialty,
+		phone,
+		isActive,
+		createdAt,
+		updatedAt,
 	};
 }

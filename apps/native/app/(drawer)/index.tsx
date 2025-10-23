@@ -1,81 +1,78 @@
-import { authClient } from "@/lib/auth-client";
-import { useQuery } from "@tanstack/react-query";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-
-import { Container } from "@/components/container";
-import { SignIn } from "@/components/sign-in";
-import { SignUp } from "@/components/sign-up";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export default function Home() {
-	const { data: session } = authClient.useSession();
+	const insets = useSafeAreaInsets();
+	const router = useRouter();
 
 	return (
-		<Container>
-			<ScrollView className="flex-1">
-				<View className="px-4">
-					<Text className="font-mono text-foreground text-3xl font-bold mb-4">
-						BETTER T STACK
-					</Text>
-					{session?.user ? (
-						<View className="mb-6 p-4 bg-card rounded-lg border border-border">
-							<View className="flex-row justify-between items-center mb-2">
-								<Text className="text-foreground text-base">
-									Welcome,{" "}
-									<Text className="font-medium">{session.user.name}</Text>
-								</Text>
-							</View>
-							<Text className="text-muted-foreground text-sm mb-4">
-								{session.user.email}
-							</Text>
-
-							<TouchableOpacity
-								className="bg-destructive py-2 px-4 rounded-md self-start"
-								onPress={() => {
-									authClient.signOut();
-									queryClient.invalidateQueries();
-								}}
-							>
-								<Text className="text-white font-medium">Sign Out</Text>
-							</TouchableOpacity>
-						</View>
-					) : null}
-					<View className="mb-6 rounded-lg border border-border p-4">
-						<Text className="mb-3 font-medium text-foreground">API Status</Text>
-						<View className="flex-row items-center gap-2">
-							<View
-								className={`h-3 w-3 rounded-full ${
-									healthCheck.data ? "bg-green-500" : "bg-red-500"
-								}`}
-							/>
-							<Text className="text-muted-foreground">
-								{healthCheck.isLoading
-									? "Checking..."
-									: healthCheck.data
-										? "Connected to API"
-										: "API Disconnected"}
-							</Text>
-						</View>
-					</View>
-					<View className="mb-6 rounded-lg border border-border p-4">
-						<Text className="mb-3 font-medium text-foreground">
-							Private Data
-						</Text>
-						{privateData && (
-							<View>
-								<Text className="text-muted-foreground">
-									{privateData.data?.message}
-								</Text>
-							</View>
-						)}
-					</View>
-					{!session?.user && (
-						<>
-							<SignIn />
-							<SignUp />
-						</>
-					)}
+		<SafeAreaView
+			style={{ flex: 1, backgroundColor: "#0E47A1" }}
+			className="flex-1 bg-[#0E47A1]"
+			edges={["top"]}
+		>
+			<View
+				style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+				className="flex-1 items-center justify-center"
+			>
+				<Image
+					source={require("../../assets/images/healthcross.png")}
+					style={{ width: 320, height: 320, marginTop: -80, resizeMode: "contain" }}
+					className="w-80 h-80 -mt-20"
+				/>
+			</View>
+			<View
+				style={{
+					backgroundColor: "#FFFFFF",
+					borderTopLeftRadius: 36,
+					borderTopRightRadius: 36,
+					paddingHorizontal: 28,
+					paddingVertical: 40,
+				}}
+				className="bg-white rounded-t-[36px] px-7 pt-10 pb-12"
+			>
+				<Text className="text-center text-xl font-bold text-zinc-900">
+					Como você quer acessar?
+				</Text>
+				<Text className="mt-3 text-center text-sm text-neutral-600">
+					Escolha o perfil que melhor representa você para continuar
+				</Text>
+				<View
+					style={{ marginTop: 32 }}
+					className="mt-8"
+				>
+					<TouchableOpacity
+						style={{
+							marginBottom: 20,
+							borderRadius: 14,
+							paddingVertical: 14,
+							width: "85%",
+							alignSelf: "center",
+						}}
+						className="flex-row items-center justify-center gap-2 bg-[#2F66F5]"
+						onPress={() => router.push("/(drawer)/patient-login")}
+					>
+						<Ionicons name="person" size={18} color="#FFFFFF" />
+						<Text className="text-base font-medium text-white">Sou Paciente</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={{
+							borderRadius: 14,
+							paddingVertical: 14,
+							width: "85%",
+							alignSelf: "center",
+						}}
+						className="flex-row items-center justify-center gap-2 bg-[#2F66F5]"
+						onPress={() => router.push("/(drawer)/professional-login")}
+					>
+						<Ionicons name="people" size={18} color="#FFFFFF" />
+						<Text className="text-base font-medium text-white">Sou Profissional</Text>
+					</TouchableOpacity>
 				</View>
-			</ScrollView>
-		</Container>
+			</View>
+			<View style={{ height: insets.bottom, backgroundColor: "#FFFFFF" }} />
+		</SafeAreaView>
 	);
 }

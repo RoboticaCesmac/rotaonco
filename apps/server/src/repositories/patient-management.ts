@@ -68,7 +68,7 @@ export const patientManagementRepository: PatientManagementRepository = {
 
 	async createPatient(input) {
 		return db.transaction(async (tx) => {
-			const insertResult = await tx.insert(patients).values({
+			await tx.insert(patients).values({
 				fullName: input.fullName,
 				cpf: input.cpf,
 				birthDate: input.birthDate ?? null,
@@ -85,25 +85,20 @@ export const patientManagementRepository: PatientManagementRepository = {
 				updatedAt: new Date(),
 			});
 
-			const insertId = Number((insertResult as { insertId?: number }).insertId);
-			if (!insertId || Number.isNaN(insertId)) {
+			const patient = await tx.query.patients.findFirst({ where: eq(patients.cpf, input.cpf) });
+			if (!patient) {
 				throw new Error("PATIENT_CREATE_FAILED");
 			}
 
 			if (input.contacts && input.contacts.length > 0) {
 				await tx.insert(patientContacts).values(
 					input.contacts.map((contact) => ({
-						patientId: insertId,
+						patientId: patient.id,
 						name: contact.fullName,
 						relation: contact.relation,
 						phone: contact.phone,
 					})),
 				);
-			}
-
-			const patient = await tx.query.patients.findFirst({ where: eq(patients.id, insertId) });
-			if (!patient) {
-				throw new Error("PATIENT_CREATE_FAILED");
 			}
 			return patient;
 		});
@@ -145,5 +140,50 @@ export const patientManagementRepository: PatientManagementRepository = {
 			occurrences: occurrencesRows,
 			alerts: alertsRows,
 		};
+	},
+
+	async updatePatient(id, input) {
+		return db.transaction(async (tx) => {
+			const updateFields: Partial<typeof patients.$inferInsert> = {};
+			if (input.fullName !== undefined) {
+				updateFields.fullName = input.fullName;
+			}
+			if (input.birthDate !== undefined) {
+				updateFields.birthDate = input.birthDate ?? null;
+			}
+			if (input.phone !== undefined) {
+				updateFields.phone = input.phone ?? null;
+			}
+			if (input.emergencyPhone !== undefined) {
+				updateFields.emergencyPhone = input.emergencyPhone ?? null;
+			}
+			if (input.tumorType !== undefined) {
+				updateFields.tumorType = input.tumorType ?? null;
+			}
+			if (input.clinicalUnit !== undefined) {
+				updateFields.clinicalUnit = input.clinicalUnit ?? null;
+			}
+			if (input.stage !== undefined) {
+				updateFields.stage = input.stage;
+			}
+			if (input.status !== undefined) {
+				updateFields.status = input.status;
+			}
+			if (input.audioMaterialUrl !== undefined) {
+				updateFields.audioMaterialUrl = input.audioMaterialUrl ?? null;
+			}
+
+			if (Object.keys(updateFields).length === 0) {
+				const existing = await tx.query.patients.findFirst({ where: eq(patients.id, id) });
+				return existing ?? null;
+			}
+
+			updateFields.updatedAt = new Date();
+
+			await tx.update(patients).set(updateFields).where(eq(patients.id, id));
+
+			const updated = await tx.query.patients.findFirst({ where: eq(patients.id, id) });
+			return updated ?? null;
+		});
 	},
 };

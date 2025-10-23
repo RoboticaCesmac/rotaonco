@@ -30,6 +30,7 @@ describe("createAppointmentService", () => {
 			findDetailById: vi.fn().mockResolvedValue(null),
 			updateStatus: vi.fn().mockResolvedValue(undefined),
 			hasConflict: vi.fn().mockResolvedValue(false),
+			findByProfessionalAndStart: vi.fn().mockResolvedValue(null),
 		};
 		audit = {
 			record: vi.fn().mockResolvedValue(undefined),
@@ -90,6 +91,7 @@ describe("createAppointmentService", () => {
 
 	it("throws on conflict when creating appointment", async () => {
 		(repo.hasConflict as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+		(repo.findByProfessionalAndStart as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 		const service = createAppointmentService({ appointments: repo, audit });
 		await expect(
 			service.createAppointment(
@@ -98,6 +100,27 @@ describe("createAppointmentService", () => {
 			),
 		).rejects.toThrowError("APPOINTMENT_CONFLICT");
 		expect(repo.createAppointment).not.toHaveBeenCalled();
+		expect(repo.findByProfessionalAndStart).toHaveBeenCalled();
+	});
+
+	it("returns existing appointment when conflict is for same patient", async () => {
+		const startsAt = new Date();
+		(repo.hasConflict as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+		(repo.findByProfessionalAndStart as ReturnType<typeof vi.fn>).mockResolvedValue({
+			...appointment,
+			patientId: 2,
+			professionalId: 7,
+			startsAt,
+		});
+		const service = createAppointmentService({ appointments: repo, audit });
+		const result = await service.createAppointment(
+			{ patientId: 2, professionalId: 7, startsAt, type: "triage" },
+			{ professionalId: 7 },
+		);
+
+		expect(result.startsAt).toBe(startsAt);
+		expect(repo.createAppointment).not.toHaveBeenCalled();
+		expect(audit.record).not.toHaveBeenCalled();
 	});
 
 	it("updates appointment fields and records audit", async () => {

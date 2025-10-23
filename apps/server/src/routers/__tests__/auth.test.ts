@@ -9,6 +9,7 @@ import type { OccurrenceService } from "../../services/occurrences";
 import type { PatientManagementService } from "../../services/patient-management";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../../types/context";
+import type { ProfessionalOnboardingService } from "../../services/professionals";
 import { auth } from "../../lib/auth";
 
 const noopRateLimit: MiddlewareHandler<AppEnv> = async (_c, next) => {
@@ -38,6 +39,9 @@ function buildRouter(): RouterSetup {
 		listPatientOccurrences: vi.fn(),
 		createOccurrence: vi.fn(),
 	} as unknown as OccurrenceService;
+	const professionals = {
+		completeOnboarding: vi.fn(),
+	} as unknown as ProfessionalOnboardingService;
 	const router = createAppRouter({
 		patientAuth,
 		patients,
@@ -46,6 +50,7 @@ function buildRouter(): RouterSetup {
 		alerts,
 		reports,
 		occurrences,
+		professionals,
 		patientLoginRateLimit: noopRateLimit,
 	});
 	return { router, loginWithPin };

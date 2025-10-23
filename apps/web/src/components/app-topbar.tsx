@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { BellIcon, MenuIcon, SearchIcon } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ export function AppTopbar({ isSidebarCollapsed = false, onToggleSidebar }: AppTo
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<PatientSummary[]>([]);
 	const [isDropdownOpen, setDropdownOpen] = useState(false);
+	const navigate = useNavigate();
 
 	const searchPatients = useMutation({
 		mutationFn: async (term: string) => {
@@ -152,13 +154,32 @@ export function AppTopbar({ isSidebarCollapsed = false, onToggleSidebar }: AppTo
 					</p>
 					<ul className="space-y-2">
 						{results.map((patient) => (
-							<li key={patient.id} className="flex flex-col rounded-md border border-transparent px-2 py-1 hover:border-[#2563EB]/40">
-								<span className="text-sm font-medium text-[#111827]">
-									{patient.fullName}
-								</span>
-								<span className="text-xs text-[#6B7280]">
-									CPF: {patient.cpf}
-								</span>
+							<li key={patient.id}>
+								<button
+									type="button"
+									onClick={() => {
+										setDropdownOpen(false);
+										setResults([]);
+										navigate({
+											to: "/patients",
+											search: {
+												q: query.trim(),
+												stage: "all",
+												status: "all",
+												page: 1,
+												selectedPatientId: patient.id,
+											},
+										});
+									}}
+									className="w-full rounded-md border border-transparent px-2 py-1 text-left hover:border-[#2563EB]/40"
+								>
+									<span className="block text-sm font-medium text-[#111827]">
+										{patient.fullName}
+									</span>
+									<span className="block text-xs text-[#6B7280]">
+										CPF: {patient.cpf}
+									</span>
+								</button>
 							</li>
 						))}
 					</ul>
@@ -168,7 +189,15 @@ export function AppTopbar({ isSidebarCollapsed = false, onToggleSidebar }: AppTo
 						className="mt-3 px-0 text-sm text-[#2563EB]"
 						onClick={() => {
 							setDropdownOpen(false);
-							toast.info("Listagem completa de pacientes em breve");
+							navigate({
+								to: "/patients",
+								search: {
+									q: query.trim(),
+									stage: "all",
+									status: "all",
+									page: 1,
+								},
+							});
 						}}
 					>
 						Ver todos

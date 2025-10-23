@@ -43,6 +43,18 @@ export type PatientCreateInput = {
 	contacts?: PatientContactInput[];
 };
 
+export type PatientUpdateInput = {
+	fullName?: string;
+	birthDate?: Date | null;
+	phone?: string | null;
+	emergencyPhone?: string | null;
+	tumorType?: string | null;
+	clinicalUnit?: string | null;
+	stage?: PatientEntity["stage"];
+	status?: PatientEntity["status"];
+	audioMaterialUrl?: string | null;
+};
+
 export interface PatientManagementRepository {
 	listPatients(params: PatientListParams): Promise<PatientListResult>;
 	createPatient(input: {
@@ -66,6 +78,7 @@ export interface PatientManagementRepository {
 		occurrences: OccurrenceEntity[];
 		alerts: AlertEntity[];
 	} | null>;
+	updatePatient(id: number, input: PatientUpdateInput): Promise<PatientEntity | null>;
 }
 
 export interface AuditPort {
@@ -135,6 +148,29 @@ export function createPatientManagementService(deps: {
 				}
 				throw error;
 			}
+		},
+
+		async updatePatient(id: number, input: PatientUpdateInput, context: { professionalId: number }) {
+			const hasChanges = Object.values(input).some((value) => value !== undefined);
+			if (!hasChanges) {
+				return null;
+			}
+
+			const updated = await repository.updatePatient(id, input);
+			if (!updated) {
+				return null;
+			}
+
+			const changedFields = Object.entries(input)
+				.filter(([, value]) => value !== undefined)
+				.map(([key]) => key);
+
+			await audit.record("PATIENT_UPDATED", updated.id, {
+				professionalId: context.professionalId,
+				fields: changedFields,
+			});
+
+			return updated;
 		},
 	};
 }

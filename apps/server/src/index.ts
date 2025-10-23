@@ -15,6 +15,7 @@ import { createAppointmentService } from "./services/appointments";
 import { createAlertService } from "./services/alerts";
 import { createReportsService } from "./services/reports";
 import { createOccurrenceService } from "./services/occurrences";
+import { createProfessionalDirectoryService, createProfessionalOnboardingService } from "./services/professionals";
 import { patientAuthRepository } from "./repositories/patient-auth";
 import { patientsRepository } from "./repositories/patients";
 import { patientManagementRepository } from "./repositories/patient-management";
@@ -34,7 +35,7 @@ app.use(
 	"/*",
 	cors({
 		origin: process.env.CORS_ORIGIN || "",
-		allowMethods: ["GET", "POST", "OPTIONS"],
+		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		credentials: true,
 	}),
@@ -87,6 +88,9 @@ const occurrenceService = createOccurrenceService({
 	},
 });
 
+const professionalOnboardingService = createProfessionalOnboardingService();
+const professionalDirectoryService = createProfessionalDirectoryService();
+
 const patientLoginRateLimit = rateLimit({
 	windowMs: 60_000,
 	max: 5,
@@ -110,6 +114,8 @@ const apiRouter = createAppRouter({
 	alerts: alertService,
 	reports: reportsService,
 	occurrences: occurrenceService,
+	professionals: professionalOnboardingService,
+	professionalDirectory: professionalDirectoryService,
 	patientLoginRateLimit,
 });
 

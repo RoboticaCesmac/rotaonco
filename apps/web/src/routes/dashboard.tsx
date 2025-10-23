@@ -46,7 +46,7 @@ function DashboardRoute() {
 
 	return (
 		<AppLayout>
-			<div className="space-y-8">
+			<div className="flex h-full flex-col gap-8 overflow-hidden">
 				<header>
 					<h1 className="text-2xl font-bold text-[#3B3D3B] md:text-[34px] md:leading-[42px]">
 						Dashboard
@@ -59,8 +59,8 @@ function DashboardRoute() {
 					error={statsQuery.error as Error | null | undefined}
 				/>
 
-				<section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_284px]">
-					<div className="space-y-6">
+				<section className="grid flex-1 gap-6 overflow-hidden xl:grid-cols-[minmax(0,1fr)_284px]">
+					<div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden">
 						<RecentPatientsCard
 							patients={patientsQuery.data ?? []}
 							isLoading={patientsQuery.isLoading}
@@ -88,7 +88,7 @@ function DashboardRoute() {
 						/>
 					</div>
 
-					<div className="space-y-6">
+					<div className="flex min-h-0 flex-col gap-6 overflow-hidden">
 						<SummaryCard
 							title="Status global"
 							items={[
@@ -225,11 +225,11 @@ type RecentPatientsCardProps = {
 
 function RecentPatientsCard({ patients, isLoading, error }: RecentPatientsCardProps) {
 	return (
-		<section className="rounded-xl border border-[#E5E5E5] bg-white p-8">
-			<header className="mb-6">
+		<section className="flex min-h-0 flex-1 flex-col rounded-xl border border-[#E5E5E5] bg-white p-8">
+			<header className="mb-6 shrink-0">
 				<h2 className="text-2xl font-bold text-[#3B3D3B]">Pacientes recentes</h2>
 			</header>
-			<div className="space-y-4">
+			<div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
 				{isLoading && <PatientCardSkeleton />}
 				{error && (
 					<p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
@@ -315,11 +315,11 @@ type AlertsCardProps = {
 
 function AlertsCard({ alerts, isLoading, error, onAcknowledge, isAcknowledging }: AlertsCardProps) {
 	return (
-		<section className="rounded-xl border border-[#E5E5E5] bg-white p-8">
-			<header className="mb-6">
+		<section className="flex min-h-0 flex-1 flex-col rounded-xl border border-[#E5E5E5] bg-white p-8">
+			<header className="mb-6 shrink-0">
 				<h2 className="text-2xl font-bold text-[#3B3D3B]">Notificações clínicas</h2>
 			</header>
-			<div className="space-y-4">
+			<div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
 				{isLoading && <AlertCardSkeleton />}
 				{error && (
 					<p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">

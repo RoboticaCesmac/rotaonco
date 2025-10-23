@@ -99,6 +99,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/professionals/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil do profissional autenticado. */
+        get: operations["getMyProfessionalProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/professionals/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Completa o cadastro do profissional autoatendido.
+         * @description Permite que profissionais recém-cadastrados informem dados obrigatórios para acessar o gerenciador.
+         */
+        post: operations["completeProfessionalOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/professionals/{id}": {
         parameters: {
             query?: never;
@@ -486,6 +523,14 @@ export interface components {
             limit: number;
             /** Format: int32 */
             offset: number;
+            statusCounts?: {
+                /** Format: int32 */
+                total?: number;
+                /** Format: int32 */
+                active?: number;
+                /** Format: int32 */
+                inactive?: number;
+            };
         };
         User: {
             /** Format: int64 */
@@ -514,6 +559,21 @@ export interface components {
             roles: ("admin" | "professional")[];
         };
         ProfessionalUpdateInput: components["schemas"]["ProfessionalCreateInput"];
+        ProfessionalOnboardingRequest: {
+            fullName: string;
+            /** @description CPF do profissional (somente dígitos). */
+            documentId: string;
+            specialty: string;
+            /** @description Telefone de contato com DDD. */
+            phone?: string | null;
+        };
+        ProfessionalOnboardingResponse: {
+            /** @enum {string} */
+            status: "created" | "updated";
+            /** Format: int64 */
+            userId: number;
+            roles: ("admin" | "professional")[];
+        };
         /** @enum {string} */
         PatientStage: "pre_triage" | "in_treatment" | "post_treatment";
         /** @enum {string} */
@@ -1015,10 +1075,14 @@ export interface operations {
             query?: {
                 /** @description Busca por nome, e-mail ou documento. */
                 q?: string;
+                /** @description Filtra resultados por status de atividade. */
+                status?: "active" | "inactive";
                 /** @description Número máximo de itens retornados. */
                 limit?: components["parameters"]["Limit"];
                 /** @description Deslocamento para paginação baseada em offset. */
                 offset?: components["parameters"]["Offset"];
+                /** @description Define se a resposta deve incluir contagem agregada por status. */
+                includeSummary?: boolean;
             };
             header?: never;
             path?: never;
@@ -1064,6 +1128,56 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            409: components["responses"]["Conflict"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getMyProfessionalProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil recuperado com sucesso. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            default: components["responses"]["Error"];
+        };
+    };
+    completeProfessionalOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfessionalOnboardingRequest"];
+            };
+        };
+        responses: {
+            /** @description Perfil profissional atualizado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalOnboardingResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
             default: components["responses"]["Error"];
         };

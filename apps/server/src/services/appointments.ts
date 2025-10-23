@@ -51,6 +51,10 @@ export interface AppointmentRepository {
 	findDetailById(id: number): Promise<AppointmentDetailRecord | null>;
 	updateStatus(id: number, status: AppointmentEntity["status"], notes?: string | null): Promise<void>;
 	hasConflict(input: { professionalId: number; startsAt: Date; excludeId?: number }): Promise<boolean>;
+	findByProfessionalAndStart(input: {
+		professionalId: number;
+		startsAt: Date;
+	}): Promise<AppointmentEntity | null>;
 }
 
 export interface AuditPort {
@@ -89,6 +93,13 @@ export function createAppointmentService(deps: {
 				startsAt: input.startsAt,
 			});
 			if (hasConflict) {
+				const existing = await repo.findByProfessionalAndStart({
+					professionalId: input.professionalId,
+					startsAt: input.startsAt,
+				});
+				if (existing && existing.patientId === input.patientId) {
+					return existing;
+				}
 				throw new Error("APPOINTMENT_CONFLICT");
 			}
 			const appointment = await repo.createAppointment({ ...input, notes: normalizedNotes });

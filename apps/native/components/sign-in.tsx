@@ -1,5 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ActivityIndicator,
 	Text,
@@ -13,6 +14,7 @@ export function SignIn() {
 	const [password, setPassword] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 
 	const handleLogin = async () => {
 		setIsLoading(true);
@@ -25,7 +27,7 @@ export function SignIn() {
 			},
 			{
 				onError: (error) => {
-					setError(error.error?.message || "Failed to sign in");
+					setError(error.error?.message || "Não foi possível entrar");
 					setIsLoading(false);
 				},
 				onSuccess: () => {
@@ -79,7 +81,7 @@ export function SignIn() {
 				{isLoading ? (
 					<ActivityIndicator size="small" color="#fff" />
 				) : (
-					<Text className="text-primary-foreground font-medium">Sign In</Text>
+					<Text className="text-primary-foreground font-medium">Entrar</Text>
 				)}
 			</TouchableOpacity>
 		</View>

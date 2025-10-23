@@ -47,13 +47,14 @@ export function AuthSessionProvider({
 		};
 	}, [sessionState.data, sessionState.error, sessionState.isPending]);
 
-	if (sessionState.isPending) {
-		return <Loader />;
-	}
-
 	return (
 		<AuthSessionContext.Provider value={contextValue}>
 			{children}
+			{sessionState.isPending && (
+				<div className="fixed inset-0 z-[999] grid place-items-center bg-background/80">
+					<Loader />
+				</div>
+			)}
 		</AuthSessionContext.Provider>
 	);
 }

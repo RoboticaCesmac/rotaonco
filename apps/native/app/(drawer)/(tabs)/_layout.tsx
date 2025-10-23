@@ -7,38 +7,46 @@ export default function TabLayout() {
 
 	return (
 		<Tabs
+			initialRouteName="index"
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: isDarkColorScheme
-					? "hsl(217.2 91.2% 59.8%)"
-					: "hsl(221.2 83.2% 53.3%)",
-				tabBarInactiveTintColor: isDarkColorScheme
-					? "hsl(215 20.2% 65.1%)"
-					: "hsl(215.4 16.3% 46.9%)",
+				tabBarActiveTintColor: isDarkColorScheme ? "#98C2FF" : "#2F66F5",
+				tabBarInactiveTintColor: isDarkColorScheme ? "#8A94A6" : "#9CA3AF",
 				tabBarStyle: {
-					backgroundColor: isDarkColorScheme
-						? "hsl(222.2 84% 4.9%)"
-						: "hsl(0 0% 100%)",
-					borderTopColor: isDarkColorScheme
-						? "hsl(217.2 32.6% 17.5%)"
-						: "hsl(214.3 31.8% 91.4%)",
+					height: 72,
+					paddingHorizontal: 32,
+					paddingTop: 12,
+					paddingBottom: 16,
+					backgroundColor: isDarkColorScheme ? "#111827" : "#FFFFFF",
+					borderTopWidth: 1,
+					borderTopColor: isDarkColorScheme ? "#1F2937" : "#E5E7EB",
 				},
+				tabBarIconStyle: {
+					marginTop: 4,
+				},
+				tabBarHideOnKeyboard: true,
+				tabBarShowLabel: false,
 			}}
 		>
 			<Tabs.Screen
 				name="index"
 				options={{
-					title: "Home",
+					title: "Início",
 					tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
 				}}
 			/>
 			<Tabs.Screen
-				name="two"
+				name="appointments"
 				options={{
-					title: "Explore",
-					tabBarIcon: ({ color }) => (
-						<TabBarIcon name="compass" color={color} />
-					),
+					title: "Consultas",
+					tabBarIcon: ({ color }) => <TabBarIcon name="calendar-check-o" color={color} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="profile"
+				options={{
+					title: "Perfil",
+					tabBarIcon: ({ color }) => <TabBarIcon name="clipboard" color={color} />,
 				}}
 			/>
 		</Tabs>

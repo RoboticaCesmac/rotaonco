@@ -1,5 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ActivityIndicator,
 	Text,
@@ -14,6 +15,7 @@ export function SignUp() {
 	const [password, setPassword] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 
 	const handleSignUp = async () => {
 		setIsLoading(true);
@@ -27,7 +29,7 @@ export function SignUp() {
 			},
 			{
 				onError: (error) => {
-					setError(error.error?.message || "Failed to sign up");
+					setError(error.error?.message || "Não foi possível criar a conta");
 					setIsLoading(false);
 				},
 				onSuccess: () => {
@@ -90,7 +92,7 @@ export function SignUp() {
 				{isLoading ? (
 					<ActivityIndicator size="small" color="#fff" />
 				) : (
-					<Text className="text-primary-foreground font-medium">Sign Up</Text>
+					<Text className="text-primary-foreground font-medium">Criar conta</Text>
 				)}
 			</TouchableOpacity>
 		</View>

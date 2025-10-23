@@ -108,7 +108,7 @@ export const appointmentsRepository: AppointmentRepository = {
 
 	async createAppointment(input: AppointmentCreateInput) {
 		const now = new Date();
-		const result = await db.insert(appointments).values({
+		await db.insert(appointments).values({
 			patientId: input.patientId,
 			professionalId: input.professionalId,
 			startsAt: input.startsAt,
@@ -117,11 +117,14 @@ export const appointmentsRepository: AppointmentRepository = {
 			createdAt: now,
 			updatedAt: now,
 		});
-		const insertId = Number((result as { insertId?: number }).insertId);
-		if (!insertId || Number.isNaN(insertId)) {
-			throw new Error("APPOINTMENT_CREATE_FAILED");
-		}
-		const created = await fetchById(insertId);
+		const created = await db.query.appointments.findFirst({
+			where: and(
+				eq(appointments.patientId, input.patientId),
+				eq(appointments.professionalId, input.professionalId),
+				eq(appointments.startsAt, input.startsAt),
+			),
+			orderBy: (table, { desc: orderDesc }) => [orderDesc(table.id)],
+		});
 		if (!created) {
 			throw new Error("APPOINTMENT_CREATE_FAILED");
 		}
@@ -173,5 +176,16 @@ export const appointmentsRepository: AppointmentRepository = {
 			where: and(...(conditions as [SQL, ...SQL[]])),
 		});
 		return Boolean(conflict);
+	},
+
+	async findByProfessionalAndStart({ professionalId, startsAt }) {
+		const existing = await db.query.appointments.findFirst({
+			where: and(
+				eq(appointments.professionalId, professionalId),
+				eq(appointments.startsAt, startsAt),
+				ne(appointments.status, "canceled"),
+			),
+		});
+		return existing ?? null;
 	},
 };
