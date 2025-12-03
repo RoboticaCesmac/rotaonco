@@ -67,7 +67,7 @@ const appointmentCreateSchema = z.object({
 	professionalId: z.coerce.number().int().positive().optional(),
 	startsAt: z.string().trim().min(1),
 	type: appointmentTypeEnum,
-	notes: z.string().trim().max(2000).optional(),
+	notes: z.string().trim().max(2000).nullish(),
 });
 
 const appointmentUpdateSchema = z
