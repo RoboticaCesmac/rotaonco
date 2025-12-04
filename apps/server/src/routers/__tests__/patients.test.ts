@@ -215,7 +215,13 @@ describe("patients routes", () => {
 		expect(response.status).toBe(200);
 		expect(patientManagement.getPatientDetail).toHaveBeenCalledWith(1);
 		const payload = await response.json();
-		expect(payload).toMatchObject({ patient: { id: 1 } });
+		expect(payload).toMatchObject({
+			id: 1,
+			fullName: "Ana",
+			alerts: [],
+			occurrences: [],
+			contacts: [],
+		});
 	});
 
 	it("returns 404 when patient detail missing", async () => {

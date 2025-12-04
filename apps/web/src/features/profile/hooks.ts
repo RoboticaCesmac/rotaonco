@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchCurrentProfessional, updateCurrentProfessional, type ProfessionalProfileUpdateInput } from "./api";
+import {
+	fetchCurrentProfessional,
+	updateCurrentProfessional,
+	updateCurrentProfessionalPassword,
+	type ProfessionalProfileUpdateInput,
+	type ProfessionalPasswordUpdateInput,
+} from "./api";
 import { toProfileViewModel, type ProfileViewModel } from "./types";
 
 const PROFILE_SCOPE = "profile";
@@ -37,6 +43,17 @@ export function useUpdateProfessionalProfile() {
 		},
 		onSuccess: (updatedProfile) => {
 			queryClient.setQueryData([PROFILE_SCOPE, "me"], updatedProfile);
+		},
+	});
+}
+
+export function useUpdateProfessionalPassword() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (input: ProfessionalPasswordUpdateInput) => updateCurrentProfessionalPassword(input),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: [PROFILE_SCOPE, "me"] }).catch(() => {});
 		},
 	});
 }

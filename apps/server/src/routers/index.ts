@@ -24,12 +24,23 @@ import type { ReportsService } from "../services/reports";
 import type { OccurrenceService } from "../services/occurrences";
 import {
 	ProfessionalDeleteError,
+	ProfessionalInviteError,
 	ProfessionalOnboardingError,
 	ProfessionalProfileUpdateError,
 } from "../services/professionals";
 import type { ProfessionalDirectoryService, ProfessionalOnboardingService } from "../services/professionals";
 import type { MiddlewareHandler } from "hono";
 import { auth } from "../lib/auth";
+import { PasswordResetError, type PasswordResetService } from "../services/password-reset";
+import {
+	buildReportFilename,
+	createAdherenceWorkbook,
+	createAlertsWorkbook,
+	createAttendanceWorkbook,
+	createWaitTimesWorkbook,
+	getReportMimeType,
+	writeWorkbookToArrayBuffer,
+} from "../lib/report-export";
 
 const patientPinSchema = z.object({
 	cpf: z
@@ -100,6 +111,13 @@ const reportRangeQuerySchema = z.object({
 	start: z.string().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/),
 	end: z.string().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/),
 });
+
+const reportFilenameSlug = {
+	attendance: "presenca",
+	adherence: "adesao",
+	"wait-times": "tempos",
+	alerts: "alertas",
+} as const;
 
 const alertUpdateSchema = z
 	.object({
@@ -302,6 +320,78 @@ const professionalProfileUpdateSchema = z
 		}
 	});
 
+const professionalRoleSchema = z.enum(["professional", "admin"]);
+
+const professionalCreateSchema = z.object({
+	name: z
+		.string()
+		.trim()
+		.min(3, "Informe o nome completo")
+		.max(120, "Nome deve conter no máximo 120 caracteres"),
+	email: z.string().trim().email("Informe um e-mail válido"),
+	documentId: z
+		.string()
+		.trim()
+		.regex(/^[0-9]{11}$/, "CPF deve conter 11 dígitos"),
+	roles: z
+		.array(professionalRoleSchema)
+		.min(1, "Informe ao menos um papel"),
+	specialty: z
+		.string()
+		.trim()
+		.max(120, "Especialidade deve conter no máximo 120 caracteres")
+		.optional(),
+	phone: z
+		.string()
+		.trim()
+		.min(10, "Telefone deve conter ao menos 10 dígitos")
+		.max(20, "Telefone deve conter no máximo 20 caracteres")
+		.optional(),
+});
+
+const professionalPasswordUpdateSchema = z
+	.object({
+		newPassword: z
+			.string()
+			.trim()
+			.min(8, "A senha deve ter ao menos 8 caracteres")
+			.max(191, "A senha deve conter no máximo 191 caracteres"),
+		confirmPassword: z
+			.string()
+			.trim()
+			.min(8, "Confirme sua nova senha"),
+	})
+	.refine((value) => value.newPassword === value.confirmPassword, {
+		message: "As senhas devem ser iguais",
+		path: ["confirmPassword"],
+	});
+
+const passwordResetRequestSchema = z.object({
+	email: z.string().trim().min(1, "Informe seu e-mail").email("Informe um e-mail válido"),
+});
+
+const passwordResetTokenQuerySchema = z.object({
+	token: z.string().trim().min(10, "Token inválido"),
+});
+
+const passwordResetConfirmSchema = z
+	.object({
+		token: z.string().trim().min(10, "Token inválido"),
+		newPassword: z
+			.string()
+			.trim()
+			.min(8, "A senha deve ter ao menos 8 caracteres")
+			.max(191, "A senha deve conter no máximo 191 caracteres"),
+		confirmPassword: z
+			.string()
+			.trim()
+			.min(8, "Confirme sua nova senha"),
+	})
+	.refine((value) => value.newPassword === value.confirmPassword, {
+		message: "As senhas devem ser iguais",
+		path: ["confirmPassword"],
+	});
+
 function validationError(details: unknown) {
 	return {
 		code: "VALIDATION_ERROR",
@@ -321,6 +411,7 @@ type AppRouterDeps = {
 	professionals: ProfessionalOnboardingService;
 	professionalDirectory?: ProfessionalDirectoryService;
 	patientLoginRateLimit: MiddlewareHandler<AppEnv>;
+	passwordReset: PasswordResetService;
 };
 
 const noopProfessionalDirectory: ProfessionalDirectoryService = {
@@ -554,6 +645,81 @@ function mapProfessionalDeleteError(error: unknown): { status: StatusCode; body:
 	}
 }
 
+function mapProfessionalInviteError(error: unknown): { status: StatusCode; body: unknown } | null {
+	if (!(error instanceof ProfessionalInviteError)) {
+		return null;
+	}
+
+	switch (error.code) {
+		case "INVALID_DOCUMENT":
+			return {
+				status: 400 as StatusCode,
+				body: validationError({ documentId: "CPF deve conter 11 dígitos" }),
+			};
+		case "EMAIL_IN_USE":
+			return {
+				status: 409 as StatusCode,
+				body: {
+					code: "EMAIL_IN_USE",
+					message: "Já existe um profissional cadastrado com este e-mail.",
+				},
+			};
+		case "DOCUMENT_IN_USE":
+			return {
+				status: 409 as StatusCode,
+				body: {
+					code: "DOCUMENT_IN_USE",
+					message: "Já existe um profissional cadastrado com este CPF.",
+				},
+			};
+		case "ROLE_NOT_FOUND":
+			return {
+				status: 400 as StatusCode,
+				body: {
+					code: "ROLE_NOT_FOUND",
+					message: "Papel profissional inválido.",
+				},
+			};
+		default:
+			return null;
+	}
+}
+
+function mapPasswordResetError(error: unknown): { status: StatusCode; body: { code: string; message: string } } | null {
+	if (!(error instanceof PasswordResetError)) {
+		return null;
+	}
+
+	switch (error.code) {
+		case "INVALID_TOKEN":
+			return {
+				status: 400 as StatusCode,
+				body: {
+					code: "INVALID_TOKEN",
+					message: "Link de redefinição inválido. Solicite um novo e-mail.",
+				},
+			};
+		case "TOKEN_EXPIRED":
+			return {
+				status: 410 as StatusCode,
+				body: {
+					code: "TOKEN_EXPIRED",
+					message: "Este link de redefinição expirou. Solicite um novo e-mail.",
+				},
+			};
+		case "TOKEN_ALREADY_USED":
+			return {
+				status: 409 as StatusCode,
+				body: {
+					code: "TOKEN_ALREADY_USED",
+					message: "Este link já foi utilizado. Solicite um novo e-mail.",
+				},
+			};
+		default:
+			return null;
+	}
+}
+
 function notFound(message: string) {
 	return {
 		code: "NOT_FOUND",
@@ -601,6 +767,7 @@ export function createAppRouter(deps: AppRouterDeps) {
 		professionals,
 		professionalDirectory = noopProfessionalDirectory,
 		patientLoginRateLimit,
+		passwordReset,
 	} = deps;
 	const router = new Hono<AppEnv>();
 
@@ -668,6 +835,92 @@ export function createAppRouter(deps: AppRouterDeps) {
 		return c.body(null, 204);
 	});
 
+		authRouter.post("/password-reset", async (c) => {
+			let body: unknown;
+			try {
+				body = await c.req.json();
+			} catch (error) {
+				return c.json(validationError("JSON inválido"), 400);
+			}
+
+			const parsed = passwordResetRequestSchema.safeParse(body);
+			if (!parsed.success) {
+				return c.json(validationError(parsed.error.flatten()), 400);
+			}
+
+			try {
+				await passwordReset.requestReset({
+					email: parsed.data.email,
+					ipAddress: getClientIp(c),
+					userAgent: getUserAgent(c),
+					logger: c.get("logger"),
+				});
+			} catch (error) {
+				c.get("logger")?.error("Failed to process password reset request", {
+					email: parsed.data.email,
+					message: error instanceof Error ? error.message : "unknown",
+				});
+				return c.json(
+					{
+						code: "PASSWORD_RESET_FAILED",
+						message: "Não foi possível enviar o e-mail de redefinição. Tente novamente mais tarde.",
+					},
+					500,
+				);
+			}
+
+			return c.body(null, 204);
+		});
+
+		authRouter.get("/password-reset/validate", async (c) => {
+			const parsed = passwordResetTokenQuerySchema.safeParse(c.req.query());
+			if (!parsed.success) {
+				return c.json(validationError(parsed.error.flatten()), 400);
+			}
+
+			try {
+				await passwordReset.validateToken(parsed.data.token);
+				return c.body(null, 204);
+			} catch (error) {
+				const mapped = mapPasswordResetError(error);
+				if (mapped) {
+					c.status(mapped.status);
+					return c.json(mapped.body);
+				}
+				throw error;
+			}
+		});
+
+		authRouter.post("/password-reset/confirm", async (c) => {
+			let body: unknown;
+			try {
+				body = await c.req.json();
+			} catch (error) {
+				return c.json(validationError("JSON inválido"), 400);
+			}
+
+			const parsed = passwordResetConfirmSchema.safeParse(body);
+			if (!parsed.success) {
+				return c.json(validationError(parsed.error.flatten()), 400);
+			}
+
+			try {
+				await passwordReset.confirmReset({
+					token: parsed.data.token,
+					newPassword: parsed.data.newPassword,
+					logger: c.get("logger"),
+				});
+				return c.body(null, 204);
+			} catch (error) {
+				const mapped = mapPasswordResetError(error);
+				if (mapped) {
+					c.status(mapped.status);
+					return c.json(mapped.body);
+				}
+				throw error;
+			}
+		});
+
 	authRouter.all("/*", (c) => auth.handler(c.req.raw));
 
 	router.route("/auth", authRouter);
@@ -696,6 +949,42 @@ export function createAppRouter(deps: AppRouterDeps) {
 				...(summary ? { statusCounts: summary } : {}),
 			},
 		});
+	});
+
+	router.post("/professionals", requireAdmin, async (c) => {
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch (error) {
+			return c.json(validationError("JSON inválido"), 400);
+		}
+
+		const parsed = professionalCreateSchema.safeParse(body);
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+
+		try {
+			const created = await professionals.createProfessional({
+				name: parsed.data.name.trim(),
+				email: parsed.data.email.trim().toLowerCase(),
+				documentId: parsed.data.documentId.trim(),
+				roles: parsed.data.roles,
+				specialty: parsed.data.specialty?.trim(),
+				phone: parsed.data.phone?.trim(),
+			});
+			const responseBody = serializeProfessionalProfile(created);
+			const response = c.json(responseBody, 201);
+			response.headers.append("Location", `/professionals/${created.id}`);
+			return response;
+		} catch (error) {
+			const mapped = mapProfessionalInviteError(error);
+			if (mapped) {
+				c.status(mapped.status);
+				return c.json(mapped.body);
+			}
+			throw error;
+		}
 	});
 
 		router.delete("/professionals/:id", requireAdmin, async (c) => {
@@ -1082,6 +1371,38 @@ export function createAppRouter(deps: AppRouterDeps) {
 			}
 			throw error;
 		}
+	});
+
+	router.patch("/professionals/me/password", requireProfessional, async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch (error) {
+			return c.json(validationError("JSON inválido"), 400);
+		}
+
+		const parsed = professionalPasswordUpdateSchema.safeParse(body);
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+
+		await professionals.updatePassword({
+			userId: professional.id,
+			externalId: professional.externalId,
+			newPassword: parsed.data.newPassword.trim(),
+		});
+
+		c.set("professional", {
+			...professional,
+			mustChangePassword: false,
+		});
+
+		return c.body(null, 204);
 	});
 
 	router.get("/patients/:id", requireProfessional, async (c) => {
@@ -1513,6 +1834,38 @@ export function createAppRouter(deps: AppRouterDeps) {
 		});
 		return c.json(report);
 	});
+	reportsRouter.get("/attendance/export", async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+		const parsed = reportRangeQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+		const range = parseDateRange(parsed.data.start, parsed.data.end);
+		if (!range) {
+			return c.json(
+				validationError({ range: "Intervalo de datas inválido" }),
+				400,
+			);
+		}
+		const period = { start: parsed.data.start, end: parsed.data.end };
+		const report = await reports.getAttendanceReport({
+			professionalId: professional.id,
+			start: range.start,
+			end: range.end,
+		});
+		const workbook = createAttendanceWorkbook(report, period);
+		const payload = writeWorkbookToArrayBuffer(workbook);
+		const headers = {
+			"Content-Type": getReportMimeType(),
+			"Content-Disposition": `attachment; filename="${buildReportFilename(reportFilenameSlug.attendance, period)}"`,
+			"Cache-Control": "no-store",
+			"Content-Length": String(payload.byteLength),
+		} as const;
+		return c.newResponse(payload, 200, headers);
+	});
 	reportsRouter.get("/adherence", async (c) => {
 		const professional = c.get("professional");
 		if (!professional) {
@@ -1536,6 +1889,38 @@ export function createAppRouter(deps: AppRouterDeps) {
 		});
 		return c.json(report);
 	});
+	reportsRouter.get("/adherence/export", async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+		const parsed = reportRangeQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+		const range = parseDateRange(parsed.data.start, parsed.data.end);
+		if (!range) {
+			return c.json(
+				validationError({ range: "Intervalo de datas inválido" }),
+				400,
+			);
+		}
+		const period = { start: parsed.data.start, end: parsed.data.end };
+		const report = await reports.getAdherenceReport({
+			professionalId: professional.id,
+			start: range.start,
+			end: range.end,
+		});
+		const workbook = createAdherenceWorkbook(report, period);
+		const payload = writeWorkbookToArrayBuffer(workbook);
+		const headers = {
+			"Content-Type": getReportMimeType(),
+			"Content-Disposition": `attachment; filename="${buildReportFilename(reportFilenameSlug.adherence, period)}"`,
+			"Cache-Control": "no-store",
+			"Content-Length": String(payload.byteLength),
+		} as const;
+		return c.newResponse(payload, 200, headers);
+	});
 	reportsRouter.get("/wait-times", async (c) => {
 		const professional = c.get("professional");
 		if (!professional) {
@@ -1558,6 +1943,93 @@ export function createAppRouter(deps: AppRouterDeps) {
 			end: range.end,
 		});
 		return c.json(report);
+	});
+	reportsRouter.get("/wait-times/export", async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+		const parsed = reportRangeQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+		const range = parseDateRange(parsed.data.start, parsed.data.end);
+		if (!range) {
+			return c.json(
+				validationError({ range: "Intervalo de datas inválido" }),
+				400,
+			);
+		}
+		const period = { start: parsed.data.start, end: parsed.data.end };
+		const report = await reports.getWaitTimesReport({
+			professionalId: professional.id,
+			start: range.start,
+			end: range.end,
+		});
+		const workbook = createWaitTimesWorkbook(report, period);
+		const payload = writeWorkbookToArrayBuffer(workbook);
+		const headers = {
+			"Content-Type": getReportMimeType(),
+			"Content-Disposition": `attachment; filename="${buildReportFilename(reportFilenameSlug["wait-times"], period)}"`,
+			"Cache-Control": "no-store",
+			"Content-Length": String(payload.byteLength),
+		} as const;
+		return c.newResponse(payload, 200, headers);
+	});
+	reportsRouter.get("/alerts", async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+		const parsed = reportRangeQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+		const range = parseDateRange(parsed.data.start, parsed.data.end);
+		if (!range) {
+			return c.json(
+				validationError({ range: "Intervalo de datas inválido" }),
+				400,
+			);
+		}
+		const report = await reports.getAlertsReport({
+			professionalId: professional.id,
+			start: range.start,
+			end: range.end,
+		});
+		return c.json(report);
+	});
+	reportsRouter.get("/alerts/export", async (c) => {
+		const professional = c.get("professional");
+		if (!professional) {
+			throw new HTTPException(401, { message: "UNAUTHENTICATED" });
+		}
+		const parsed = reportRangeQuerySchema.safeParse(c.req.query());
+		if (!parsed.success) {
+			return c.json(validationError(parsed.error.flatten()), 400);
+		}
+		const range = parseDateRange(parsed.data.start, parsed.data.end);
+		if (!range) {
+			return c.json(
+				validationError({ range: "Intervalo de datas inválido" }),
+				400,
+			);
+		}
+		const period = { start: parsed.data.start, end: parsed.data.end };
+		const report = await reports.getAlertsReport({
+			professionalId: professional.id,
+			start: range.start,
+			end: range.end,
+		});
+		const workbook = createAlertsWorkbook(report, period);
+		const payload = writeWorkbookToArrayBuffer(workbook);
+		const headers = {
+			"Content-Type": getReportMimeType(),
+			"Content-Disposition": `attachment; filename="${buildReportFilename(reportFilenameSlug.alerts, period)}"`,
+			"Cache-Control": "no-store",
+			"Content-Length": String(payload.byteLength),
+		} as const;
+		return c.newResponse(payload, 200, headers);
 	});
 
 	const alertsRouter = new Hono<AppEnv>();

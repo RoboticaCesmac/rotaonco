@@ -313,10 +313,11 @@ async function countProfessionalsByStatus(isActive: boolean) {
 const PROFESSIONAL_ROLE_NAME = "professional" as const;
 const ADMIN_ROLE_NAME = "admin" as const;
 const DEFAULT_INITIAL_PASSWORD = "rotaonco2025" as const;
-const EMAIL_PASSWORD_PROVIDER_ID = "email-password" as const;
+const EMAIL_PASSWORD_PROVIDER_ID = "credential" as const;
 const KNOWN_EMAIL_PASSWORD_PROVIDERS = new Set([
 	EMAIL_PASSWORD_PROVIDER_ID,
 	"email",
+	"email-password",
 	"password",
 ]);
 
@@ -447,16 +448,24 @@ export function createProfessionalOnboardingService(): ProfessionalOnboardingSer
 						accountId: normalizedEmail,
 					});
 					createdPasswordAccount = true;
-				} else if (passwordAccount.accountId !== normalizedEmail) {
-					await internalAdapter.updateAccount(passwordAccount.id, {
-						accountId: normalizedEmail,
-					});
+				} else {
+					const accountUpdates: Partial<typeof passwordAccount> = {};
+					if (passwordAccount.accountId !== normalizedEmail) {
+						accountUpdates.accountId = normalizedEmail;
+					}
+					if (passwordAccount.providerId !== EMAIL_PASSWORD_PROVIDER_ID) {
+						accountUpdates.providerId = EMAIL_PASSWORD_PROVIDER_ID;
+					}
+					if (Object.keys(accountUpdates).length > 0) {
+						passwordAccount = await internalAdapter.updateAccount(passwordAccount.id, accountUpdates);
+					}
 				}
 
 				const needsPasswordReset = createdAuthUser || createdPasswordAccount;
 
 				if (needsPasswordReset) {
-					await internalAdapter.updatePassword(authUserId, DEFAULT_INITIAL_PASSWORD);
+					const hashedPassword = await ctx.password.hash(DEFAULT_INITIAL_PASSWORD);
+					await internalAdapter.updatePassword(authUserId, hashedPassword, ctx as never);
 				}
 
 				return await db.transaction(async (tx) => {
@@ -751,7 +760,8 @@ export function createProfessionalOnboardingService(): ProfessionalOnboardingSer
 		},
 		async updatePassword(input) {
 			const ctx = await auth.$context;
-			await ctx.internalAdapter.updatePassword(input.externalId, input.newPassword);
+			const hashedPassword = await ctx.password.hash(input.newPassword);
+			await ctx.internalAdapter.updatePassword(input.externalId, hashedPassword, ctx as never);
 			await db
 				.update(users)
 				.set({

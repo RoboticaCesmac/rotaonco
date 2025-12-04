@@ -2,8 +2,13 @@ import { AppLayout } from "@/components/app-layout";
 import { ProfileHero } from "@/features/profile/components/profile-hero";
 import { ProfileInfoForm } from "@/features/profile/components/profile-info-form";
 import { ProfileOverviewCard } from "@/features/profile/components/profile-overview-card";
-import { useProfessionalProfile, useUpdateProfessionalProfile } from "@/features/profile/hooks";
-import { type ProfessionalProfileUpdateInput } from "@/features/profile/api";
+import { ProfilePasswordForm } from "@/features/profile/components/profile-password-form";
+import {
+	useProfessionalProfile,
+	useUpdateProfessionalPassword,
+	useUpdateProfessionalProfile,
+} from "@/features/profile/hooks";
+import { type ProfessionalProfileUpdateInput, type ProfessionalPasswordUpdateInput } from "@/features/profile/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { requireActiveProfessional } from "@/lib/route-guards";
@@ -18,6 +23,7 @@ export const Route = createFileRoute("/profile")({
 function ProfileRoute() {
 	const profileQuery = useProfessionalProfile();
 	const updateProfileMutation = useUpdateProfessionalProfile();
+	const updatePasswordMutation = useUpdateProfessionalPassword();
 	const profile = profileQuery.data ?? null;
 	const errorMessage = profileQuery.isError
 		? ((profileQuery.error instanceof Error ? profileQuery.error.message : null) ?? "Não foi possível carregar seus dados.")
@@ -33,6 +39,18 @@ function ProfileRoute() {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Não foi possível atualizar o perfil.";
 			toast.error(message);
+		}
+	};
+
+	const handlePasswordUpdate = async (payload: ProfessionalPasswordUpdateInput) => {
+		try {
+			await updatePasswordMutation.mutateAsync(payload);
+			toast.success("Senha atualizada com sucesso.");
+			return true;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Não foi possível atualizar a senha.";
+			toast.error(message);
+			return false;
 		}
 	};
 
@@ -65,12 +83,18 @@ function ProfileRoute() {
 						}
 						isUpdating={updateProfileMutation.isPending}
 					/>
-					<ProfileInfoForm
-						profile={profile}
-						isLoading={profileQuery.isLoading}
-						onSubmit={async (payload) => handleProfileUpdate(payload, "Dados atualizados com sucesso.")}
-						isSubmitting={updateProfileMutation.isPending}
-					/>
+					<div className="flex flex-col gap-6">
+						<ProfileInfoForm
+							profile={profile}
+							isLoading={profileQuery.isLoading}
+							onSubmit={async (payload) => handleProfileUpdate(payload, "Dados atualizados com sucesso.")}
+							isSubmitting={updateProfileMutation.isPending}
+						/>
+						<ProfilePasswordForm
+							onSubmit={handlePasswordUpdate}
+							isSubmitting={updatePasswordMutation.isPending}
+						/>
+					</div>
 				</div>
 			</div>
 		</AppLayout>

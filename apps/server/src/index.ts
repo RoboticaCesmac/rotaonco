@@ -16,6 +16,7 @@ import { createAlertService } from "./services/alerts";
 import { createReportsService } from "./services/reports";
 import { createOccurrenceService, type AlertPort } from "./services/occurrences";
 import { createProfessionalDirectoryService, createProfessionalOnboardingService } from "./services/professionals";
+import { createPasswordResetService } from "./services/password-reset";
 import { patientAuthRepository } from "./repositories/patient-auth";
 import { patientsRepository } from "./repositories/patients";
 import { patientManagementRepository } from "./repositories/patient-management";
@@ -93,6 +94,7 @@ const occurrenceService = createOccurrenceService({
 
 const professionalOnboardingService = createProfessionalOnboardingService();
 const professionalDirectoryService = createProfessionalDirectoryService();
+const passwordResetService = createPasswordResetService();
 
 const patientLoginRateLimit = rateLimit({
 	windowMs: 60_000,
@@ -120,6 +122,7 @@ const apiRouter = createAppRouter({
 	professionals: professionalOnboardingService,
 	professionalDirectory: professionalDirectoryService,
 	patientLoginRateLimit,
+	passwordReset: passwordResetService,
 });
 
 app.route("/api", apiRouter);

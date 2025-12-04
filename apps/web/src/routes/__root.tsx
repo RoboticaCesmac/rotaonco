@@ -5,14 +5,7 @@ import { AuthSessionProvider } from "@/providers/auth-session-provider";
 import type { ApiClient } from "@/lib/api-client";
 import type { AuthClient } from "@/lib/auth-client";
 import type { QueryClient } from "@tanstack/react-query";
-import {
-	HeadContent,
-	Outlet,
-	createRootRouteWithContext,
-	useRouterState,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { HeadContent, Outlet, createRootRouteWithContext, useRouterState } from "@tanstack/react-router";
 import "../index.css";
 
 export interface RouterAppContext {
@@ -68,8 +61,6 @@ function RootComponent() {
 					<Toaster richColors />
 				</AuthSessionProvider>
 			</ThemeProvider>
-			<TanStackRouterDevtools position="bottom-left" />
-			{import.meta.env.DEV && <ReactQueryDevtools buttonPosition="bottom-right" />}
 		</>
 	);
 }

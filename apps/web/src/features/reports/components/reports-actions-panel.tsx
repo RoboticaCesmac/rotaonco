@@ -1,4 +1,4 @@
-import { FileText, Layers } from "lucide-react";
+import { FileDown, FileText, Layers, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { REPORT_ACTION_GROUPS, type ReportKind } from "../data";
 
@@ -7,13 +7,21 @@ const ICONS = [FileText, Layers];
 type ReportsActionsPanelProps = {
 	activeReport: ReportKind;
 	onSelectReport: (report: ReportKind) => void;
+ 	onExportReport: (report: ReportKind) => void;
+ 	exportingReport?: ReportKind | null;
 };
 
-export function ReportsActionsPanel({ activeReport, onSelectReport }: ReportsActionsPanelProps) {
+export function ReportsActionsPanel({
+	activeReport,
+	onSelectReport,
+	onExportReport,
+	exportingReport = null,
+}: ReportsActionsPanelProps) {
 	return (
 		<section className="flex flex-col gap-4">
 			{REPORT_ACTION_GROUPS.map((group, index) => {
 				const Icon = ICONS[index % ICONS.length];
+				const isExporting = exportingReport === group.reportKind;
 				return (
 					<article
 						key={group.title}
@@ -30,18 +38,34 @@ export function ReportsActionsPanel({ activeReport, onSelectReport }: ReportsAct
 						</header>
 						<div className="flex flex-wrap gap-2">
 							{group.reportKind ? (
-								<Button
-									type="button"
-									variant={activeReport === group.reportKind ? "default" : "outline"}
-									className={
-										activeReport === group.reportKind
-											? "gap-2 bg-[#3663D8] text-white hover:bg-[#2D52B1]"
+								<>
+									<Button
+										type="button"
+										variant={activeReport === group.reportKind ? "default" : "outline"}
+										className={
+											activeReport === group.reportKind
+												? "gap-2 bg-[#3663D8] text-white hover:bg-[#2D52B1]"
 											: "gap-2 border-[#CBD5F5] text-[#3663D8] hover:bg-[#F3F6FD]"
-									}
-									onClick={() => onSelectReport(group.reportKind)}
-								>
-									{group.actions[0] ?? "Visualizar"}
-								</Button>
+										}
+										onClick={() => onSelectReport(group.reportKind)}
+									>
+										{group.actions[0] ?? "Visualizar"}
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										className="gap-2 border-[#CBD5F5] text-[#3663D8] hover:bg-[#F3F6FD]"
+										onClick={() => onExportReport(group.reportKind)}
+										disabled={exportingReport !== null}
+									>
+										{isExporting ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											<FileDown className="h-4 w-4" />
+										)}
+										Exportar Excel
+									</Button>
+								</>
 							) : null}
 						</div>
 					</article>

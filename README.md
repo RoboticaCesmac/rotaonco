@@ -37,6 +37,21 @@ bun db:push
 ```
 
 
+## Environment
+
+Create an `.env` file inside `apps/server` with the required secrets before running the API:
+
+```
+DATABASE_URL=...
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM="RotaOnco <noreply@rotaonco.mail.com>"
+APP_WEB_URL=https://app.rotaonco.com
+PASSWORD_RESET_TOKEN_TTL_MINUTES=60
+```
+
+Adjust the values to match your setup. `EMAIL_FROM` must use the verified domain `rotaonco.mail.com` in Resend.
+
+
 Then, run the development server:
 
 ```bash

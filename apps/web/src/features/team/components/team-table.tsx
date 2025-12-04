@@ -35,81 +35,83 @@ export function TeamTable({ members, isLoading, onDelete, onToggleStatus, busyMe
 	}
 
 	return (
-		<div className="overflow-x-auto">
-			<table className="min-w-full divide-y divide-[#E5E5E5]">
-				<thead className="bg-[#F9FAFB]">
-					<tr>
-						<th scope="col" className={HEADER_CLASS}>Nome</th>
-						<th scope="col" className={HEADER_CLASS}>Especialidade</th>
-						<th scope="col" className={HEADER_CLASS}>Documento</th>
-						<th scope="col" className={HEADER_CLASS}>Telefone</th>
-						<th scope="col" className={HEADER_CLASS}>E-mail</th>
-						<th scope="col" className={HEADER_CLASS}>Status</th>
-						<th scope="col" className={HEADER_CLASS}>Papéis</th>
-						<th scope="col" className={HEADER_CLASS}>Atualizado em</th>
-						<th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-							Ações
-						</th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-[#E5E5E5]">
-					{members.map((member) => {
-						const statusBadge = getStatusBadge(member.status);
-						const isInactive = member.status === "inactive";
-						const isBusy = busyMemberId === member.id;
-						return (
-							<tr key={member.id} className="hover:bg-[#F3F6FD]/60">
-								<td className={CELL_CLASS}>
-									<div className="flex flex-col">
-										<span className="font-semibold text-[#111827]">{member.fullName}</span>
-										<span className="text-xs text-[#9CA3AF]">ID #{member.id}</span>
-									</div>
-								</td>
-								<td className={CELL_CLASS}>{member.specialty ?? "—"}</td>
-								<td className={CELL_CLASS}>{member.documentId}</td>
-								<td className={CELL_CLASS}>{member.phone ?? "—"}</td>
-								<td className={CELL_CLASS}>{member.email}</td>
-								<td className={CELL_CLASS}>
-									<span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.className}`}>
-										{statusBadge.label}
-									</span>
-								</td>
-								<td className={CELL_CLASS}>{formatRoles(member.roles)}</td>
-								<td className={CELL_CLASS}>{formatDate(member.updatedAt)}</td>
-								<td className="px-6 py-4 text-right">
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												disabled={isBusy}
-												className="text-[#6B7280] hover:text-[#3663D8]"
-											>
-												<Ellipsis className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end" className="w-40">
-											<DropdownMenuItem
-												disabled={isBusy}
-												onSelect={() => onToggleStatus?.(member)}
-											>
-												{isInactive ? "Ativar" : "Desativar"}
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												variant="destructive"
-												disabled={isBusy}
-												onSelect={() => onDelete?.(member)}
-											>
-												Excluir
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
+		<div className="app-scrollbar max-h-[60vh] overflow-x-auto">
+			<div className="no-scrollbar max-h-[60vh] min-w-full overflow-y-auto">
+				<table className="min-w-full divide-y divide-[#E5E5E5]">
+					<thead className="bg-[#F9FAFB]">
+						<tr>
+							<th scope="col" className={HEADER_CLASS}>Nome</th>
+							<th scope="col" className={HEADER_CLASS}>Especialidade</th>
+							<th scope="col" className={HEADER_CLASS}>Documento</th>
+							<th scope="col" className={HEADER_CLASS}>Telefone</th>
+							<th scope="col" className={HEADER_CLASS}>E-mail</th>
+							<th scope="col" className={HEADER_CLASS}>Status</th>
+							<th scope="col" className={HEADER_CLASS}>Papéis</th>
+							<th scope="col" className={HEADER_CLASS}>Atualizado em</th>
+							<th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+								Ações
+							</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-[#E5E5E5]">
+						{members.map((member) => {
+							const statusBadge = getStatusBadge(member.status);
+							const isInactive = member.status === "inactive";
+							const isBusy = busyMemberId === member.id;
+							return (
+								<tr key={member.id} className="hover:bg-[#F3F6FD]/60">
+									<td className={CELL_CLASS}>
+										<div className="flex flex-col">
+											<span className="font-semibold text-[#111827]">{member.fullName}</span>
+											<span className="text-xs text-[#9CA3AF]">ID #{member.id}</span>
+										</div>
+									</td>
+									<td className={CELL_CLASS}>{member.specialty ?? "—"}</td>
+									<td className={CELL_CLASS}>{member.documentId}</td>
+									<td className={CELL_CLASS}>{member.phone ?? "—"}</td>
+									<td className={CELL_CLASS}>{member.email}</td>
+									<td className={CELL_CLASS}>
+										<span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.className}`}>
+											{statusBadge.label}
+										</span>
+									</td>
+									<td className={CELL_CLASS}>{formatRoles(member.roles)}</td>
+									<td className={CELL_CLASS}>{formatDate(member.updatedAt)}</td>
+									<td className="px-6 py-4 text-right">
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													disabled={isBusy}
+													className="text-[#6B7280] hover:text-[#3663D8]"
+												>
+													<Ellipsis className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end" className="w-40">
+												<DropdownMenuItem
+													disabled={isBusy}
+													onSelect={() => onToggleStatus?.(member)}
+												>
+													{isInactive ? "Ativar" : "Desativar"}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													variant="destructive"
+													disabled={isBusy}
+													onSelect={() => onDelete?.(member)}
+												>
+													Excluir
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }

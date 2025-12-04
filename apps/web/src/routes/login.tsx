@@ -156,6 +156,12 @@ function LoginForm() {
 				)}
 			</form.Field>
 
+			<div className="flex justify-end">
+				<Button variant="link" size="sm" asChild>
+					<Link to="/esqueci-senha">Esqueci minha senha</Link>
+				</Button>
+			</div>
+
 			<form.Subscribe>
 				{(state) => (
 					<Button

@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as ResetarSenhaRouteImport } from './routes/resetar-senha'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsultasRouteImport } from './routes/consultas'
 import { Route as IndexRouteImport } from './routes/index'
@@ -29,6 +31,11 @@ const TeamRoute = TeamRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetarSenhaRoute = ResetarSenhaRouteImport.update({
+  id: '/resetar-senha',
+  path: '/resetar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -56,6 +63,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -81,11 +93,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/consultas': typeof ConsultasRoute
   '/dashboard': typeof DashboardRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/login': typeof LoginRoute
   '/nova-senha': typeof NovaSenhaRoute
   '/patients': typeof PatientsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/resetar-senha': typeof ResetarSenhaRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/alerts/$alertId': typeof AlertsAlertIdRoute
@@ -94,11 +108,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/consultas': typeof ConsultasRoute
   '/dashboard': typeof DashboardRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/login': typeof LoginRoute
   '/nova-senha': typeof NovaSenhaRoute
   '/patients': typeof PatientsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/resetar-senha': typeof ResetarSenhaRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/alerts/$alertId': typeof AlertsAlertIdRoute
@@ -108,11 +124,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/consultas': typeof ConsultasRoute
   '/dashboard': typeof DashboardRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/login': typeof LoginRoute
   '/nova-senha': typeof NovaSenhaRoute
   '/patients': typeof PatientsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/resetar-senha': typeof ResetarSenhaRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/alerts/$alertId': typeof AlertsAlertIdRoute
@@ -123,11 +141,13 @@ export interface FileRouteTypes {
     | '/'
     | '/consultas'
     | '/dashboard'
+    | '/esqueci-senha'
     | '/login'
     | '/nova-senha'
     | '/patients'
     | '/profile'
     | '/reports'
+    | '/resetar-senha'
     | '/sign-up'
     | '/team'
     | '/alerts/$alertId'
@@ -136,11 +156,13 @@ export interface FileRouteTypes {
     | '/'
     | '/consultas'
     | '/dashboard'
+    | '/esqueci-senha'
     | '/login'
     | '/nova-senha'
     | '/patients'
     | '/profile'
     | '/reports'
+    | '/resetar-senha'
     | '/sign-up'
     | '/team'
     | '/alerts/$alertId'
@@ -149,11 +171,13 @@ export interface FileRouteTypes {
     | '/'
     | '/consultas'
     | '/dashboard'
+    | '/esqueci-senha'
     | '/login'
     | '/nova-senha'
     | '/patients'
     | '/profile'
     | '/reports'
+    | '/resetar-senha'
     | '/sign-up'
     | '/team'
     | '/alerts/$alertId'
@@ -163,11 +187,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConsultasRoute: typeof ConsultasRoute
   DashboardRoute: typeof DashboardRoute
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   LoginRoute: typeof LoginRoute
   NovaSenhaRoute: typeof NovaSenhaRoute
   PatientsRoute: typeof PatientsRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
+  ResetarSenhaRoute: typeof ResetarSenhaRoute
   SignUpRoute: typeof SignUpRoute
   TeamRoute: typeof TeamRoute
   AlertsAlertIdRoute: typeof AlertsAlertIdRoute
@@ -187,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resetar-senha': {
+      id: '/resetar-senha'
+      path: '/resetar-senha'
+      fullPath: '/resetar-senha'
+      preLoaderRoute: typeof ResetarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -224,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -259,11 +299,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConsultasRoute: ConsultasRoute,
   DashboardRoute: DashboardRoute,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
   LoginRoute: LoginRoute,
   NovaSenhaRoute: NovaSenhaRoute,
   PatientsRoute: PatientsRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
+  ResetarSenhaRoute: ResetarSenhaRoute,
   SignUpRoute: SignUpRoute,
   TeamRoute: TeamRoute,
   AlertsAlertIdRoute: AlertsAlertIdRoute,

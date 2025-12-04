@@ -3,7 +3,7 @@ import type { ProfileViewModel } from "../types";
 import type { ProfessionalProfileUpdateInput } from "../api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserRound, Stethoscope, IdCard, Phone, Lock, Mail } from "lucide-react";
+import { Loader2, UserRound, Stethoscope, IdCard, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 const FIELD_ICON_CLASS = "h-4 w-4 text-[#9CA3AF]";
@@ -50,7 +50,7 @@ export function ProfileInfoForm({ profile, isLoading, onSubmit, isSubmitting }: 
 		<section className="flex flex-1 flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-white p-8">
 			<header className="space-y-1">
 				<h2 className="text-2xl font-bold text-[#3B3D3B]">Suas informações</h2>
-				<p className="text-sm text-[#6E726E]">Altere telefone, senha e demais dados pessoais.</p>
+				<p className="text-sm text-[#6E726E]">Atualize seus dados pessoais e contatos.</p>
 			</header>
 
 			<form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6">
@@ -74,11 +74,6 @@ export function ProfileInfoForm({ profile, isLoading, onSubmit, isSubmitting }: 
 						value={formState.phone}
 						onChange={handleChange("phone")}
 						disabled={isDisabled}
-					/>
-					<Field label="Senha" type="password" icon={<Lock className={FIELD_ICON_CLASS} />}
-						value={formState.password}
-						onChange={handleChange("password")}
-						disabled
 					/>
 					<Field label="E-mail" type="email" icon={<Mail className={FIELD_ICON_CLASS} />}
 						value={formState.email}
@@ -146,7 +141,6 @@ function createFormState(profile?: ProfileViewModel | null) {
 		specialty: profile?.specialty ?? "",
 		document: profile?.documentId ?? "",
 		phone: profile?.phone ?? "",
-		password: "************",
 		email: profile?.email ?? "",
 	};
 }

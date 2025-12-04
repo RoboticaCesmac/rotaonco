@@ -25,4 +25,11 @@ if (typeof password.verify !== "function") {
 
 globalRef.Bun.password = password;
 
+process.env.DATABASE_URL ??= "mysql://root:password@127.0.0.1:3306/rotaonco_test";
+process.env.CORS_ORIGIN ??= "http://localhost";
+process.env.AUTH_SECRET ??= "test-auth-secret";
+process.env.EXPO_PROJECT_ID ??= "test-expo-project";
+process.env.EXPO_USERNAME ??= "test";
+process.env.EXPO_PASSWORD ??= "test";
+
 export {};

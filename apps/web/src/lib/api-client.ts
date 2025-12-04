@@ -7,6 +7,8 @@ const baseUrl = normalizedBaseUrl.endsWith("/api")
 	? normalizedBaseUrl
 	: `${normalizedBaseUrl}/api`;
 
+export const apiBaseUrl = baseUrl;
+
 export const apiClient = createClient<paths>({
 	baseUrl,
 	fetch: async (input: RequestInfo | URL, init?: RequestInit) => {

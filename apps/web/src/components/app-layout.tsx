@@ -6,15 +6,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 	return (
-		<div className="flex min-h-svh bg-[#FCFBFA] text-[#111827]">
+		<div className="flex h-svh w-full overflow-hidden bg-[#FCFBFA] text-[#111827]">
 			<AppSidebar collapsed={isSidebarCollapsed} />
-			<div className="flex min-h-svh flex-1 flex-col">
+			<div className="flex h-full flex-1 flex-col">
 				<AppTopbar
 					isSidebarCollapsed={isSidebarCollapsed}
 					onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
 				/>
-				<main className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-8 lg:px-8 xl:px-10">
-					<div className="flex h-full flex-col overflow-hidden">
+				<main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-6 pt-8 lg:px-8 xl:px-10">
+					<div className="flex min-h-0 flex-1 flex-col">
 						{children}
 					</div>
 				</main>

@@ -118,7 +118,7 @@ export function AppSidebar({ collapsed = false }: AppSidebarProps) {
 	return (
 		<aside
 			id="app-sidebar"
-			className="hidden h-full min-h-svh w-[312px] border-r border-[#CECFCD] bg-white px-10 py-5 xl:flex xl:flex-col xl:gap-16"
+			className="hidden h-full w-[312px] flex-shrink-0 border-r border-[#CECFCD] bg-white px-10 py-5 xl:flex xl:flex-col xl:gap-16"
 		>
 			<div className="flex items-center gap-3">
 				<div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#3663D8]">

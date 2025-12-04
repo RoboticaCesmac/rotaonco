@@ -132,3 +132,38 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5F5 #F3F6FD;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: #F3F6FD;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #CBD5F5;
+    border-radius: 9999px;
+    border: 2px solid #F3F6FD;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #A7C0F5;
+  }
+}

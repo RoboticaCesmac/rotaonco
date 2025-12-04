@@ -179,6 +179,93 @@ paths:
           description: Logout efetuado.
         default:
           $ref: '#/components/responses/Error'
+  /auth/password-reset:
+    post:
+      tags: [Auth]
+      summary: Envia e-mail com link para redefinir senha.
+      description: Caso o e-mail pertença a um profissional ativo, envia um link de redefinição válido por tempo limitado.
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '204':
+          description: Solicitação processada. Um e-mail é enviado quando a conta existe.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Error'
+  /auth/password-reset/validate:
+    get:
+      tags: [Auth]
+      summary: Valida token de redefinição de senha.
+      description: Usa o token recebido por e-mail para verificar se ainda é válido.
+      operationId: validatePasswordResetToken
+      security: []
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Token válido e não expirado.
+        '400':
+          description: Token inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Token já utilizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: Token expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirma nova senha utilizando token enviado por e-mail.
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+      responses:
+        '204':
+          description: Senha atualizada com sucesso.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Token já utilizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: Token expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /professionals:
     post:
       tags: [Professionals]
@@ -965,6 +1052,25 @@ paths:
                 $ref: '#/components/schemas/AttendanceReport'
         default:
           $ref: '#/components/responses/Error'
+  /reports/attendance/export:
+    get:
+      tags: [Reports]
+      summary: Exporta métricas de comparecimento em XLSX.
+      operationId: exportAttendanceReport
+      x-roles: [professional, admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportRangeStart'
+        - $ref: '#/components/parameters/ReportRangeEnd'
+      responses:
+        '200':
+          description: Planilha com indicadores de frequência.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
   /reports/wait-times:
     get:
       tags: [Reports]
@@ -981,6 +1087,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WaitTimesReport'
+        default:
+          $ref: '#/components/responses/Error'
+  /reports/wait-times/export:
+    get:
+      tags: [Reports]
+      summary: Exporta tempos de espera em XLSX.
+      operationId: exportWaitTimesReport
+      x-roles: [professional, admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportRangeStart'
+        - $ref: '#/components/parameters/ReportRangeEnd'
+      responses:
+        '200':
+          description: Planilha com métricas de tempo de espera.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         default:
           $ref: '#/components/responses/Error'
   /reports/adherence:
@@ -1001,6 +1126,25 @@ paths:
                 $ref: '#/components/schemas/AdherenceReport'
         default:
           $ref: '#/components/responses/Error'
+  /reports/adherence/export:
+    get:
+      tags: [Reports]
+      summary: Exporta indicadores de adesão em XLSX.
+      operationId: exportAdherenceReport
+      x-roles: [professional, admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportRangeStart'
+        - $ref: '#/components/parameters/ReportRangeEnd'
+      responses:
+        '200':
+          description: Planilha com métricas de adesão.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
   /reports/alerts:
     get:
       tags: [Reports]
@@ -1019,6 +1163,25 @@ paths:
                 $ref: '#/components/schemas/AlertsReport'
         default:
           $ref: '#/components/responses/Error'
+  /reports/alerts/export:
+    get:
+      tags: [Reports]
+      summary: Exporta indicadores de alertas em XLSX.
+      operationId: exportAlertsReport
+      x-roles: [professional, admin]
+      parameters:
+        - $ref: '#/components/parameters/ReportRangeStart'
+        - $ref: '#/components/parameters/ReportRangeEnd'
+      responses:
+        '200':
+          description: Planilha com métricas de alertas.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
   /reports/adverse-effects:
     get:
       tags: [Reports]
@@ -1035,41 +1198,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdverseEffectsReport'
-        default:
-          $ref: '#/components/responses/Error'
-  /reports/{kind}/export:
-    get:
-      tags: [Reports]
-      summary: Exporta relatórios em PDF ou XLSX.
-      operationId: exportReport
-      x-roles: [admin]
-      parameters:
-        - in: path
-          name: kind
-          required: true
-          schema:
-            type: string
-            enum: [attendance, wait-times, adherence, adverse-effects]
-        - in: query
-          name: format
-          required: true
-          schema:
-            type: string
-            enum: [pdf, xlsx]
-        - $ref: '#/components/parameters/ReportRangeStart'
-        - $ref: '#/components/parameters/ReportRangeEnd'
-      responses:
-        '200':
-          description: Arquivo gerado.
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
         default:
           $ref: '#/components/responses/Error'
   /notifications/appointment-reminders:
@@ -1392,6 +1520,29 @@ components:
         avatarDataUrl:
           type: string
           nullable: true
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    PasswordResetConfirm:
+      type: object
+      required: [token, newPassword, confirmPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 191
+          format: password
+        confirmPassword:
+          type: string
+          minLength: 8
+          maxLength: 191
+          format: password
     PatientStage:
       type: string
       enum: [pre_triage, in_treatment, post_treatment]

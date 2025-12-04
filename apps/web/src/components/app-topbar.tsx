@@ -209,7 +209,7 @@ export function AppTopbar({ isSidebarCollapsed = false, onToggleSidebar }: AppTo
 	const showAvatarImage = Boolean(profile?.avatarUrl) && !hasAvatarError;
 
 	return (
-		<header className="relative flex h-20 items-center justify-between border-b border-[#CECFCD] bg-white px-6">
+		<header className="relative flex h-20 flex-shrink-0 items-center justify-between border-b border-[#CECFCD] bg-white px-6">
 			<div className="flex items-center gap-4">
 				{onToggleSidebar ? (
 					<Button

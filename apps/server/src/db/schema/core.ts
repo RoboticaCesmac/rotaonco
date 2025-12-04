@@ -267,6 +267,30 @@ export const auditLogs = mysqlTable(
 	}),
 );
 
+export const passwordResetTokens = mysqlTable(
+	"password_reset_tokens",
+	{
+		id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+		tokenId: varchar("token_id", { length: 36 }).notNull(),
+		tokenHash: varchar("token_hash", { length: 191 }).notNull(),
+		userId: bigint("user_id", { mode: "number" })
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		authUserId: varchar("auth_user_id", { length: 36 }).notNull(),
+		email: varchar("email", { length: 191 }).notNull(),
+		expiresAt: datetime("expires_at", { fsp: 3 }).notNull(),
+		usedAt: datetime("used_at", { fsp: 3 }),
+		createdAt: datetime("created_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+		ipAddress: varchar("ip_address", { length: 45 }),
+		userAgent: varchar("user_agent", { length: 255 }),
+	},
+	(table) => ({
+		tokenIdx: uniqueIndex("password_reset_tokens_token_idx").on(table.tokenId),
+		userIdx: index("password_reset_tokens_user_idx").on(table.userId),
+		expiresIdx: index("password_reset_tokens_expires_idx").on(table.expiresAt),
+	}),
+);
+
 export const settings = mysqlTable("settings", {
 	key: varchar("key", { length: 191 }).primaryKey(),
 	value: json("value").notNull(),

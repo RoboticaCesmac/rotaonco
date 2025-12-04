@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -185,28 +185,50 @@ export default function HowItWorks() {
 					const isActive = activeTrackId === track.id;
 					const isLoading = loadingTrackId === track.id;
 					const durationLabel = trackDurations[track.id] ?? "...";
+					const descriptionText = isLoading
+						? "Carregando áudio..."
+						: isActive
+							? "Reproduzindo agora. Ajuste o volume conforme necessário."
+							: track.description;
+					const hintLabel = isLoading
+						? "Preparando..."
+						: isActive
+							? "Toque para pausar"
+							: "Toque para ouvir";
 					return (
 						<View key={track.id} style={[styles.card, isActive && styles.cardActive]}>
 							<Pressable
 								disabled={isLoading}
 								onPress={() => handleTogglePlayback(track)}
 								style={({ pressed }) => [
-									styles.cardButton,
-									pressed && !isLoading && styles.cardPressed,
+									styles.cardTouchable,
+									isActive && styles.cardTouchableActive,
+									pressed && !isLoading && styles.cardTouchablePressed,
 								]}
 								android_ripple={{ color: "rgba(37, 99, 235, 0.12)", borderless: false }}
 							>
-								<View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
-									<Ionicons name="volume-high" size={28} color="#FFFFFF" />
+								<View style={[styles.cardAccent, isActive && styles.cardAccentActive]} pointerEvents="none" />
+								<View style={[styles.playButton, isActive && styles.playButtonActive]}>
+									{isLoading ? (
+										<ActivityIndicator size="small" color="#FFFFFF" />
+									) : (
+										<Ionicons name={isActive ? "pause" : "play"} size={22} color="#FFFFFF" />
+									)}
 								</View>
-								<View style={styles.cardContent}>
-									<Text style={styles.cardTitle}>{track.title}</Text>
-									<Text style={styles.cardDescription}>
-										{isLoading ? "Carregando áudio..." : track.description}
-									</Text>
-									<View style={styles.cardFooter}>
-										<View style={styles.durationDot} />
+								<View style={styles.cardBody}>
+									<View style={styles.cardHeaderRow}>
+										<Text style={styles.cardTitle}>{track.title}</Text>
+										<View style={styles.cardTag}>
+											<Ionicons name="sparkles-outline" size={12} color="#1E3A8A" />
+											<Text style={styles.cardTagText}>Áudio guiado</Text>
+										</View>
+									</View>
+									<Text style={styles.cardDescription}>{descriptionText}</Text>
+									<View style={styles.cardMeta}>
+										<Ionicons name="time-outline" size={14} color="#2563EB" />
 										<Text style={styles.cardDuration}>{durationLabel}</Text>
+										<View style={styles.metaDot} />
+										<Text style={styles.cardHint}>{hintLabel}</Text>
 									</View>
 								</View>
 							</Pressable>
@@ -253,72 +275,118 @@ const styles = StyleSheet.create({
 		marginBottom: 18,
 	},
 	card: {
-		borderRadius: 16,
+		borderRadius: 20,
 		borderWidth: 1,
-		borderColor: "#C7D7FE",
-		backgroundColor: "#FFFFFF",
-		marginBottom: 16,
-		shadowColor: "#000000",
-		shadowOpacity: 0.03,
-		shadowOffset: { width: 0, height: 1 },
-		shadowRadius: 2,
-		elevation: 1,
+		borderColor: "#DFE8FF",
+		backgroundColor: "#F8FBFF",
+		marginBottom: 20,
+		shadowColor: "#102A61",
+		shadowOpacity: 0.08,
+		shadowOffset: { width: 0, height: 8 },
+		shadowRadius: 16,
+		elevation: 3,
 		overflow: "hidden",
 	},
 	cardActive: {
-		borderColor: "#3B7BFF",
+		borderColor: "#2563EB",
 		backgroundColor: "#EEF4FF",
 	},
-	cardButton: {
+	cardTouchable: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 18,
-		paddingVertical: 16,
-		width: "100%",
+		paddingHorizontal: 20,
+		paddingVertical: 18,
+		position: "relative",
 	},
-	cardPressed: {
-		opacity: 0.92,
+	cardTouchableActive: {
+		paddingVertical: 20,
 	},
-	iconWrapper: {
-		width: 60,
-		height: 60,
-		borderRadius: 18,
+	cardTouchablePressed: {
+		opacity: 0.94,
+	},
+	cardAccent: {
+		position: "absolute",
+		right: -42,
+		top: -36,
+		width: 160,
+		height: 160,
+		borderRadius: 80,
+		backgroundColor: "rgba(37, 99, 235, 0.12)",
+	},
+	cardAccentActive: {
+		backgroundColor: "rgba(37, 99, 235, 0.18)",
+	},
+	playButton: {
+		width: 64,
+		height: 64,
+		borderRadius: 32,
 		backgroundColor: "#2563EB",
 		alignItems: "center",
 		justifyContent: "center",
-		marginRight: 18,
+		marginRight: 20,
+		shadowColor: "#2563EB",
+		shadowOpacity: 0.28,
+		shadowOffset: { width: 0, height: 12 },
+		shadowRadius: 20,
+		elevation: 4,
 	},
-	iconWrapperActive: {
-		backgroundColor: "#1E46C0",
+	playButtonActive: {
+		backgroundColor: "#1E40AF",
 	},
-	cardContent: {
+	cardBody: {
 		flex: 1,
 	},
+	cardHeaderRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: 6,
+	},
 	cardTitle: {
-		fontSize: 14,
+		fontSize: 16,
 		fontWeight: "700",
-		color: "#2563EB",
-		marginBottom: 4,
+		color: "#0F172A",
+	},
+	cardTag: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#DBEAFE",
+		paddingHorizontal: 10,
+		paddingVertical: 4,
+		borderRadius: 999,
+	},
+	cardTagText: {
+		marginLeft: 4,
+		fontSize: 11,
+		fontWeight: "600",
+		color: "#1E3A8A",
 	},
 	cardDescription: {
 		fontSize: 13,
+		lineHeight: 20,
 		color: "#1F2937",
-		marginBottom: 8,
+		marginBottom: 12,
 	},
-	cardFooter: {
+	cardMeta: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginTop: 2,
-	},
-	durationDot: {
-		width: 6,
-		height: 6,
-		borderRadius: 3,
-		backgroundColor: "#9CA3AF",
-		marginRight: 6,
 	},
 	cardDuration: {
+		marginLeft: 6,
 		fontSize: 12,
-		color: "#6B7280",
+		fontWeight: "600",
+		color: "#1E40AF",
+	},
+	metaDot: {
+		width: 4,
+		height: 4,
+		borderRadius: 2,
+		backgroundColor: "#93C5FD",
+		marginHorizontal: 10,
+	},
+	cardHint: {
+		fontSize: 12,
+		fontWeight: "500",
+		color: "#2563EB",
 	},
 });

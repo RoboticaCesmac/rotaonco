@@ -12,6 +12,7 @@ import type { ProfessionalOnboardingService } from "../../services/professionals
 import type { AppEnv } from "../../types/context";
 import { auth } from "../../lib/auth";
 import * as usersRepository from "../../repositories/users";
+import { getReportMimeType } from "../../lib/report-export";
 
 const noopRateLimit: MiddlewareHandler<AppEnv> = async (_c, next) => {
 	await next();
@@ -298,5 +299,68 @@ describe("reports routes", () => {
 				},
 			],
 		});
+	});
+
+	it("exports attendance report as excel", async () => {
+		const { router, reports } = buildRouter();
+		reports.getAttendanceReport.mockResolvedValue({
+			period: { start: "2025-10-01", end: "2025-10-19" },
+			totals: {
+				scheduled: 10,
+				confirmed: 8,
+				completed: 7,
+				noShow: 1,
+				cancellationRate: 0.1,
+			},
+		});
+
+		const response = await router.request(
+			"/reports/attendance/export?start=2025-10-01&end=2025-10-19",
+			{
+				method: "GET",
+				headers: { Authorization: "Bearer token" },
+			},
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-type")).toBe(getReportMimeType());
+		expect(response.headers.get("content-disposition")).toContain("relatorio_presenca");
+		const payload = await response.arrayBuffer();
+		expect(payload.byteLength).toBeGreaterThan(0);
+	});
+
+	it("exports alerts report as excel", async () => {
+		const { router, reports } = buildRouter();
+		reports.getAlertsReport.mockResolvedValue({
+			period: { start: "2025-10-01", end: "2025-10-31" },
+			totals: {
+				status: { open: 2, acknowledged: 1, closed: 0 },
+				severity: { low: 0, medium: 2, high: 1 },
+			},
+			recent: [
+				{
+					id: 11,
+					patientId: 31,
+					kind: "Dor intensa",
+					severity: "high",
+					status: "open",
+					createdAt: new Date("2025-10-10T12:00:00.000Z").toISOString(),
+				},
+			],
+		});
+
+		const response = await router.request(
+			"/reports/alerts/export?start=2025-10-01&end=2025-10-31",
+			{
+				method: "GET",
+				headers: { Authorization: "Bearer token" },
+			},
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-type")).toBe(getReportMimeType());
+		expect(response.headers.get("content-disposition")).toContain("relatorio_alertas");
+		const payload = await response.arrayBuffer();
+		expect(payload.byteLength).toBeGreaterThan(0);
 	});
 });

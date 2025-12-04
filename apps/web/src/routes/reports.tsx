@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { ReportsActionsPanel } from "@/features/reports/components/reports-actions-panel";
@@ -7,10 +8,11 @@ import { ReportsWaitTimeCard } from "@/features/reports/components/reports-wait-
 import { ReportsAbsenceCard } from "@/features/reports/components/reports-absence-card";
 import { ReportsAdherenceCard } from "@/features/reports/components/reports-adherence-card";
 import { ReportsAlertsCard } from "@/features/reports/components/reports-alerts-card";
-import type { ReportRange } from "@/features/reports/api";
+import { exportReportAsExcel, type ReportRange } from "@/features/reports/api";
 import { REPORT_ACTION_GROUPS, type ReportKind } from "@/features/reports/data";
 import { createFileRoute } from "@tanstack/react-router";
 import { requireActiveProfessional } from "@/lib/route-guards";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/reports")({
 	beforeLoad: async ({ context }) => {
@@ -31,10 +33,45 @@ const RANGE_OPTIONS: RangeOption[] = [
 	{ id: "90d", label: "Últimos 90 dias", days: 90 },
 ];
 
+const REPORT_LABELS: Record<ReportKind, string> = {
+	"wait-times": "de tempo",
+	adherence: "de adesão",
+	attendance: "de presença",
+	alerts: "de alertas",
+};
+
 function ReportsRoute() {
 	const [activeRangeId, setActiveRangeId] = useState<RangeOption["id"]>("30d");
 	const [selectedReport, setSelectedReport] = useState<ReportKind>("adherence");
 	const range = useMemo(() => createRangeFromPreset(activeRangeId), [activeRangeId]);
+	const [exportingReport, setExportingReport] = useState<ReportKind | null>(null);
+
+	const exportMutation = useMutation<void, Error, { kind: ReportKind; range: ReportRange }>(
+		{
+			mutationFn: async ({ kind, range: targetRange }) => {
+				await exportReportAsExcel(kind, targetRange);
+			},
+			onMutate: ({ kind }) => {
+				setExportingReport(kind);
+			},
+			onSuccess: (_data, variables) => {
+				const label = REPORT_LABELS[variables.kind];
+				toast.success(`Planilha do relatório ${label} exportada com sucesso.`);
+			},
+			onError: (error, variables) => {
+				const label = REPORT_LABELS[variables.kind];
+				const message = error instanceof Error ? error.message : `Não foi possível exportar o relatório ${label}.`;
+				toast.error(message);
+			},
+			onSettled: () => {
+				setExportingReport(null);
+			},
+		},
+	);
+
+	const handleExportReport = (report: ReportKind) => {
+		exportMutation.mutate({ kind: report, range });
+	};
 
 	return (
 		<AppLayout>
@@ -83,7 +120,12 @@ function ReportsRoute() {
 						{selectedReport === "alerts" && <ReportsAlertsCard range={range} />}
 					</div>
 					<aside className="flex min-h-0 flex-col gap-6">
-						<ReportsActionsPanel activeReport={selectedReport} onSelectReport={setSelectedReport} />
+						<ReportsActionsPanel
+							activeReport={selectedReport}
+							onSelectReport={setSelectedReport}
+							onExportReport={handleExportReport}
+							exportingReport={exportingReport}
+						/>
 					</aside>
 				</div>
 			</div>
