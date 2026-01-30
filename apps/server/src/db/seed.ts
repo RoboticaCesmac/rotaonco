@@ -19,7 +19,7 @@ import {
 	auditLogs,
 	settings,
 } from "./schema/core";
-import { user as authUsers } from "./schema/auth";
+import { user as authUsers, account } from "./schema/auth";
 
 async function seed() {
 	console.info("🌱 Seeding database...");
@@ -27,6 +27,8 @@ async function seed() {
 	const adminAuthId = "00000000-0000-0000-0000-000000000001";
 	const adminEmail = "admin@rotaonco.local";
 	const adminDocument = "00000000000";
+	const adminPassword = "12345678";
+    const passwordHash = await Bun.password.hash(adminPassword);
 
 	await db
 		.insert(roles)
@@ -60,6 +62,24 @@ async function seed() {
 				updatedAt: sql`VALUES(updated_at)`,
 			},
 		});
+
+    await db
+        .insert(account)
+        .values({
+            id: "00000000-0000-0000-0000-00000000000a", // Um ID fixo para a conta
+            accountId: adminEmail,
+            providerId: "credential", // Indica login por e-mail/senha
+            userId: adminAuthId, // O ID que você definiu no topo do seed
+            password: passwordHash,
+            createdAt: now,
+            updatedAt: now,
+        })
+        .onDuplicateKeyUpdate({
+            set: {
+                password: sql`VALUES(password)`,
+                updatedAt: sql`VALUES(updated_at)`,
+            },
+        });
 
 	await db
 		.insert(users)
