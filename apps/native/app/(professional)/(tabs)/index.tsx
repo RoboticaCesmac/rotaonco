@@ -58,13 +58,6 @@ const SHORTCUTS: Array<{
 		icon: "calendar",
 		accent: "#1D4ED8",
 	},
-	{
-		id: "reports",
-		title: "Relatórios",
-		description: "Acompanhe indicadores e evolução dos casos.",
-		icon: "document-text",
-		accent: "#1D4ED8",
-	},
 ];
 
 const ProfessionalHomeScreen = () => {
