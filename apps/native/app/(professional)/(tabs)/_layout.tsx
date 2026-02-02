@@ -1,9 +1,11 @@
 import { TabBarIcon } from "@/components/tabbar-icon";
 import { useColorScheme } from "@/lib/use-color-scheme";
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ProfessionalTabLayout = () => {
 	const { isDarkColorScheme } = useColorScheme();
+	const insets = useSafeAreaInsets();
 
 	return (
 		<Tabs
@@ -13,10 +15,10 @@ const ProfessionalTabLayout = () => {
 				tabBarActiveTintColor: isDarkColorScheme ? "#93C5FD" : "#1D4ED8",
 				tabBarInactiveTintColor: isDarkColorScheme ? "#64748B" : "#94A3B8",
 				tabBarStyle: {
-					height: 72,
+					height: 72 + insets.bottom,
 					paddingHorizontal: 28,
 					paddingTop: 12,
-					paddingBottom: 16,
+					paddingBottom: insets.bottom > 0 ? insets.bottom : 16,
 					backgroundColor: isDarkColorScheme ? "#0F172A" : "#FFFFFF",
 					borderTopWidth: 1,
 					borderTopColor: isDarkColorScheme ? "#1E293B" : "#E2E8F0",

@@ -54,7 +54,8 @@ export default function RootLayout() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-				<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+				{/* (!) StatusBar: Alterar para "light" ou "dark" quando a implementação do modo noturno estiver pronta */}
+				<StatusBar style={isDarkColorScheme ? "dark" : "dark"} />
 				<GestureHandlerRootView style={{ flex: 1 }}>
 					<Stack>
 						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
