@@ -39,7 +39,7 @@ export default function HowItWorks() {
 		() => [
 			{
 				id: "how-it-works-intro",
-				title: "ROTA+NCO",
+				title: "RotaOnco",
 				description: "Toque aqui e ouça as instruções.",
 				source: require("@/assets/audio/luvvoice.com-20251125-SmFcUW.mp3"),
 			},
@@ -275,6 +275,7 @@ const styles = StyleSheet.create({
 		marginBottom: 18,
 	},
 	card: {
+		padding:10,
 		borderRadius: 20,
 		borderWidth: 1,
 		borderColor: "#DFE8FF",
