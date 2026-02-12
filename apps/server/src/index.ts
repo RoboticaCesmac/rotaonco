@@ -26,6 +26,7 @@ import { reportsRepository } from "./repositories/reports";
 import { occurrencesRepository } from "./repositories/occurrences";
 import { issuePatientSession } from "./lib/patient-session";
 import { insertAuditLog } from "./repositories/audit";
+import { corsOrigin } from "./lib/config";
 
 const app = new Hono<AppEnv>();
 
@@ -35,7 +36,7 @@ app.use("*", honoLogger());
 app.use(
 	"/*",
 	cors({
-		origin: process.env.CORS_ORIGIN || "",
+		origin: corsOrigin,
 		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		credentials: true,

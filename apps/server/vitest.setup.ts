@@ -1,3 +1,4 @@
+import { corsOrigin } from "@/lib/config";
 import { vi } from "vitest";
 
 const globalRef = globalThis as unknown as {
