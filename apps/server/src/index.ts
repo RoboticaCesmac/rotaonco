@@ -36,7 +36,7 @@ app.use("*", honoLogger());
 app.use(
 	"/*",
 	cors({
-		origin: corsOrigin,
+		origin: [corsOrigin, "rotaonco://", "exp://"],
 		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		credentials: true,
