@@ -21,7 +21,12 @@
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
 			"package": "com.citec.rotaonco",
-			"versionCode": 1
+			"versionCode": 3,
+			"permissions": [
+				"android.permission.READ_EXTERNAL_STORAGE",
+				"android.permission.WRITE_EXTERNAL_STORAGE",
+				"android.permission.READ_MEDIA_IMAGES"
+			]
 		},
 		"web": {
 			"output": "static",
@@ -39,6 +44,12 @@
 					"dark": {
 						"backgroundColor": "#002f6d"
 					}
+				}
+			],
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "O RotaOnco precisa acessar suas fotos para que você possa atualizar sua foto de perfil."
 				}
 			]
 		],
