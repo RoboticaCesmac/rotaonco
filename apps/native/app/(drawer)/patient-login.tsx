@@ -195,7 +195,6 @@ export default function PatientLogin() {
 								onChangeText={handleCpfChange}
 								placeholder="000.000.000-00"
 								placeholderTextColor="#9CA3AF"
-								returnKeyType="next"
 								onSubmitEditing={() => inputRefs.current[0]?.focus()}
 							/>
 						</View>
@@ -214,7 +213,6 @@ export default function PatientLogin() {
 									onChangeText={(value) => handleDigitChange(value, index)}
 									onKeyPress={(event) => handleKeyPress(event, index)}
 									selectionColor="#0E47A1"
-									returnKeyType="done"
 									onSubmitEditing={() => {
 										if (index === CODE_LENGTH - 1) {
 											handleConfirm();
